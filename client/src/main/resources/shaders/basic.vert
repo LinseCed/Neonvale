@@ -1,5 +1,8 @@
 #version 330 core
 
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 aNorm;
+
 void main() {
-    gl_Position = vec3(0.0f, 0.0f, 0.0f);
+    gl_Position = vec3(aPos);
 }

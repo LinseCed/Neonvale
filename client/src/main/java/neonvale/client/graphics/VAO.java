@@ -1,5 +1,11 @@
 package neonvale.client.graphics;
 
+import org.lwjgl.BufferUtils;
+import org.lwjgl.opengl.GL;
+
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
+
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
@@ -7,19 +13,30 @@ import static org.lwjgl.opengl.GL30.*;
 
 public class VAO {
 
-    static final int VERT_SIZE = 12;
-
-    private final VBO vbo;
+    private final VBO vertexVbo;
+    private final VBO normalVbo;
+    private final EBO indicesEBO;
     private int vao;
 
-    public VAO () {
-        this.vbo = new VBO(VERT_SIZE, GL_DYNAMIC_DRAW);
+    public VAO (FloatBuffer vertices, FloatBuffer normals, IntBuffer indices) {
         this.vao = glGenVertexArrays();
+        this.vertexVbo = new VBO(vertices.limit(), GL_DYNAMIC_DRAW);
+        this.vertexVbo.bufferData(vertices);
+        this.normalVbo = new VBO(normals.limit(), GL_DYNAMIC_DRAW);
+        this.normalVbo.bufferData(normals);
+        this.indicesEBO = new EBO(indices.limit());
+        this.indicesEBO.bufferData(indices);
         glBindVertexArray(this.vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo.getId());
 
+        glBindBuffer(GL_ARRAY_BUFFER, vertexVbo.getId());
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, VERT_SIZE, 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+
+        glBindBuffer(GL_ARRAY_BUFFER, normalVbo.getId());
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, 0, 0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesEBO.getId());
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
@@ -34,7 +51,9 @@ public class VAO {
     }
 
     public void cleanup() {
-        vbo.cleanup();
+        vertexVbo.cleanup();
+        normalVbo.cleanup();
+        indicesEBO.cleanup();
         glDeleteVertexArrays(this.vao);
         this.vao = 0;
     }
