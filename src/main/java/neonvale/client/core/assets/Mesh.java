@@ -14,4 +14,9 @@ public class Mesh {
         this.normals = normals;
         this.indices = indices;
     }
+
+    public void draw() {
+
+    }
+
 }
