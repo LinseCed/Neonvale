@@ -1,6 +1,8 @@
 package neonvale.client;
 
 import neonvale.client.core.GameLoop;
+import neonvale.client.core.assets.Model;
+import neonvale.client.core.assets.ModelLoader;
 import neonvale.client.graphics.Window;
 import neonvale.client.resources.ShaderManager;
 
@@ -20,6 +22,7 @@ public class NeonvaleClient {
         this.shaderManager = ShaderManager.getInstance();
         this.shaderManager.use("Basic");
         this.gameLoop = new GameLoop();
+        Model shape = ModelLoader.load("assets/shape.glb");
     }
 
     public void run() {
