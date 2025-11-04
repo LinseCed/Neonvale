@@ -5,6 +5,8 @@ import org.lwjgl.assimp.AIMesh;
 import org.lwjgl.assimp.AIScene;
 import org.lwjgl.assimp.AIVector3D;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -17,7 +19,15 @@ import static org.lwjgl.system.MemoryUtil.memAllocInt;
 public class ModelLoader {
 
     public static Model load(String path) {
-        AIScene scene = aiImportFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+        File jarDir;
+        AIScene scene;
+        try {
+            jarDir = new File(ModelLoader.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
+            File shapeFile = new File(jarDir, path);
+            scene = aiImportFile(shapeFile.getAbsolutePath(), aiProcess_Triangulate | aiProcess_FlipUVs);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
         if (scene == null || scene.mRootNode() == null) {
             throw  new RuntimeException("Failed to load Model: " + path);
         }
