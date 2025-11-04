@@ -1,4 +1,4 @@
 package neonvale.client.input;
 
-public class MouseCallback {
+public class MouseCallback{
 }

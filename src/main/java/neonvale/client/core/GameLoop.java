@@ -3,8 +3,8 @@ package neonvale.client.core;
 public class GameLoop {
 
     private boolean running = true;
-    private final float TARGET_FPS = 60.0f;
-    private final float FRAME_TIME = 1.0f / TARGET_FPS;
+    private final float TARGET_UPS = 60.0f;
+    private final float UPDATE_TIME = 1.0f / TARGET_UPS;
 
     public void run(UpdateCallback update, RenderCallback render) {
         Timer timer = new Timer();
@@ -14,9 +14,9 @@ public class GameLoop {
             float deltaTime = timer.getDelta();
             accumulator += deltaTime;
 
-            while (accumulator >= FRAME_TIME) {
-                update.update(FRAME_TIME);
-                accumulator -= FRAME_TIME;
+            while (accumulator >= UPDATE_TIME) {
+                update.update(UPDATE_TIME);
+                accumulator -= UPDATE_TIME;
             }
 
             render.render();

@@ -2,11 +2,13 @@ package neonvale.client;
 
 import neonvale.client.core.GameLoop;
 import neonvale.client.graphics.Window;
+import neonvale.client.resources.ShaderManager;
 
 public class Neonvale {
 
     private Window window;
     private GameLoop gameLoop;
+    private ShaderManager shaderManager;
 
     public static void main(String[] args) {
         Neonvale neonvale = new Neonvale();
@@ -15,6 +17,8 @@ public class Neonvale {
 
     private void init() {
         this.window = new Window();
+        this.shaderManager = ShaderManager.getInstance();
+        this.shaderManager.use("Basic");
         this.gameLoop = new GameLoop();
     }
 
