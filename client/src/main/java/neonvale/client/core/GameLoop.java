@@ -19,7 +19,7 @@ public class GameLoop {
                 accumulator -= UPDATE_TIME;
             }
 
-            render.render();
+            render.render(deltaTime);
         }
     }
 

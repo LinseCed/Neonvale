@@ -28,24 +28,24 @@ public class KeyCallback extends GLFWKeyCallback {
         }
     }
 
-    public void pollInputs(long window) {
+    public void pollInputs(long window, float delta) {
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            camera.moveForward();
+            camera.moveForward(delta);
         }
         if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            camera.moveLeft();
+            camera.moveLeft(delta);
         }
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            camera.moveBackward();
+            camera.moveBackward(delta);
         }
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            camera.moveRight();
+            camera.moveRight(delta);
         }
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            camera.moveUp();
+            camera.moveUp(delta);
         }
         if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-            camera.moveDown();
+            camera.moveDown(delta);
         }
     }
 }

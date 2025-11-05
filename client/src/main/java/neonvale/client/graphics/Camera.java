@@ -51,42 +51,42 @@ public class Camera {
         return projection;
     }
 
-    public void moveForward(float distance) {
+    public void moveForwardDistance(float distance) {
         position.x += distance * (float) Math.sin(Math.toRadians(yaw));
         position.z -= distance * (float) Math.cos(Math.toRadians(yaw));
     }
 
-    public void moveForward() {
-        moveForward(Config.movementSpeed);
+    public void moveForward(float delta) {
+        moveForwardDistance(Config.movementSpeed * delta);
     }
 
-    public void moveBackward() {
-        moveForward(-Config.movementSpeed);
+    public void moveBackward(float delta) {
+        moveForwardDistance(-Config.movementSpeed * delta);
     }
 
-    public void moveRight(float distance) {
+    public void moveRightDistance(float distance) {
         position.x += distance * (float) Math.sin(Math.toRadians(yaw + 90));
         position.z -= distance * (float) Math.cos(Math.toRadians(yaw + 90));
     }
 
-    public void moveRight() {
-        moveRight(Config.movementSpeed);
+    public void moveRight(float delta) {
+        moveRightDistance(Config.movementSpeed * delta);
     }
 
-    public void moveLeft() {
-        moveRight(-Config.movementSpeed);
+    public void moveLeft(float delta) {
+        moveRightDistance(-Config.movementSpeed * delta);
     }
 
-    public void moveUp(float distance) {
+    public void moveUpDistance(float distance) {
         position.y += distance;
     }
 
-    public void moveUp() {
-        moveUp(Config.movementSpeed);
+    public void moveUp(float delta) {
+        moveUpDistance(Config.movementSpeed * delta);
     }
 
-    public void moveDown() {
-        moveUp(-Config.movementSpeed);
+    public void moveDown(float delta) {
+        moveUpDistance(-Config.movementSpeed * delta);
     }
 
     public void addPitch(float pitch) {

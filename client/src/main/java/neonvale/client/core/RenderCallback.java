@@ -1,5 +1,5 @@
 package neonvale.client.core;
 
 public interface RenderCallback {
-    void render();
+    void render(float delta);
 }

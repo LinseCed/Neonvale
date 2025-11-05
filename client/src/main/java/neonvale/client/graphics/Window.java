@@ -28,7 +28,7 @@ public class Window {
 
         window = glfwCreateWindow(Config.winWidth, Config.winHeight, "Neonvale", NULL, NULL);
 
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
@@ -52,7 +52,6 @@ public class Window {
     public void update() {
         glfwSwapBuffers(window);
         glfwPollEvents();
-        KeyCallback.getInstance().pollInputs(this.window);
     }
 
     public boolean shouldClose() {
@@ -62,5 +61,9 @@ public class Window {
     public void cleanup() {
         glfwDestroyWindow(window);
         glfwTerminate();
+    }
+
+    public long getWindow() {
+        return window;
     }
 }
