@@ -1,10 +1,15 @@
 package neonvale.client.graphics;
 
+import org.joml.Matrix4f;
+import org.lwjgl.system.MemoryStack;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.lwjgl.opengl.GL20.*;
@@ -12,6 +17,7 @@ import static org.lwjgl.opengl.GL20.*;
 public class Shader {
 
     private int id;
+    private final Map<String, Integer> uniformLocations = new HashMap<>();
 
     public Shader(String vertexShaderPath, String fragmentShaderPath) {
         String vertexShaderSource = "";
@@ -61,5 +67,25 @@ public class Shader {
 
     public void use() {
         glUseProgram(this.id);
+    }
+
+    private int getUniformLocation(String name) {
+        if (uniformLocations.containsKey(name))
+            return uniformLocations.get(name);
+
+        int location = glGetUniformLocation(this.id, name);
+        if (location == -1)
+            System.err.println("Warning: uniform '" + name + "' not found.");
+        uniformLocations.put(name, location);
+        return location;
+    }
+
+    public void uniformMat4(Matrix4f mat, String name) {
+        int location = getUniformLocation(name);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            glUniformMatrix4fv(location, false, mat.get(stack.mallocFloat(16)));
+        } catch (Exception e) {
+            System.err.println("Exception while setting uniform mat4 " + name);
+        }
     }
 }

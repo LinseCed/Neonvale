@@ -1,6 +1,8 @@
 package neonvale.client.graphics;
 
+import neonvale.client.core.Config;
 import neonvale.client.input.KeyCallback;
+import neonvale.client.input.MouseCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 
@@ -19,15 +21,20 @@ public class Window {
         }
 
         glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 
-        window = glfwCreateWindow(1920, 1080, "Neonvale", NULL, NULL);
+        window = glfwCreateWindow(Config.winWidth, Config.winHeight, "Neonvale", NULL, NULL);
 
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
 
         glfwSetKeyCallback(window, KeyCallback.getInstance());
+        glfwSetCursorPosCallback(window, MouseCallback.getInstance());
 
         glfwMakeContextCurrent(window);
 
@@ -45,6 +52,7 @@ public class Window {
     public void update() {
         glfwSwapBuffers(window);
         glfwPollEvents();
+        KeyCallback.getInstance().pollInputs(this.window);
     }
 
     public boolean shouldClose() {

@@ -2,6 +2,7 @@ package neonvale.client.resources;
 
 
 import neonvale.client.graphics.Shader;
+import org.joml.Matrix4f;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,16 @@ public class ShaderManager {
     public void use(String shaderName) {
         if (shaders.containsKey(shaderName)) {
             shaders.get(shaderName).use();
+        } else {
+            throw new RuntimeException("Shader " + shaderName + " not found.");
+        }
+    }
+
+    public void uniformMat4(String shaderName, Matrix4f mat, String uniform) {
+        if (shaders.containsKey(shaderName)) {
+            Shader shader = shaders.get(shaderName);
+            shader.use();
+            shader.uniformMat4(mat, uniform);
         } else {
             throw new RuntimeException("Shader " + shaderName + " not found.");
         }
