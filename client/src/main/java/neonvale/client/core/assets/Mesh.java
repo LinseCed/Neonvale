@@ -1,6 +1,7 @@
 package neonvale.client.core.assets;
 
 import neonvale.client.graphics.VAO;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -19,6 +20,9 @@ public class Mesh {
         this.normals = normals;
         this.indices = indices;
         this.vao = new VAO(vertices, normals, indices);
+        MemoryUtil.memFree(vertices);
+        MemoryUtil.memFree(normals);
+        MemoryUtil.memFree(indices);
     }
 
     public void draw() {

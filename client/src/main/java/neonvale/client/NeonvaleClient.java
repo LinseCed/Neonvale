@@ -7,6 +7,7 @@ import neonvale.client.graphics.Camera;
 import neonvale.client.graphics.Window;
 import neonvale.client.input.KeyCallback;
 import neonvale.client.resources.ShaderManager;
+import org.joml.Matrix4f;
 
 
 public class NeonvaleClient {
@@ -48,11 +49,14 @@ public class NeonvaleClient {
         keyCallback.pollInputs(window.getWindow(), delta);
     }
 
+    private Matrix4f model = new Matrix4f();
     private void render(float delta) {
         this.window.clear();
         this.shaderManager.use("Basic");
         this.shaderManager.uniformMat4("Basic", camera.getViewMatrix(), "uView");
         this.shaderManager.uniformMat4("Basic", camera.getProjectionMatrix(), "uProj");
+        this.shaderManager.uniformMat4("Basic", model, "uModel");
+        model.rotate(delta, 1, 1, 1);
         shape.draw();
         this.window.update();
     }
