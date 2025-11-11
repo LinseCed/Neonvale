@@ -60,7 +60,7 @@ public class Shader {
         glAttachShader(this.id, vertexShader);
         glAttachShader(this.id, fragmentShader);
         glLinkProgram(this.id);
-
+        glValidateProgram(this.id);
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
     }
@@ -86,6 +86,15 @@ public class Shader {
             glUniformMatrix4fv(location, false, mat.get(stack.mallocFloat(16)));
         } catch (Exception e) {
             System.err.println("Exception while setting uniform mat4 " + name);
+        }
+    }
+
+    public void uniform1i(int i, String name) {
+        int location = getUniformLocation(name);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            glUniform1i(location, i);
+        } catch (Exception e) {
+            System.err.println("Exception while setting uniform " + name);
         }
     }
 }

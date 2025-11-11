@@ -13,6 +13,8 @@ public class ShaderManager {
 
     String basicVertexShader = "basic.vert";
     String basicFragmentShader = "basic.frag";
+    String basicTextureVertexShader = "basicTexture.vert";
+    String basicTextureFragmentShader = "basicTexture.frag";
 
     private ShaderManager() {
         this.shaders = new HashMap<>();
@@ -29,6 +31,8 @@ public class ShaderManager {
     private void loadShaders() {
         Shader basicShader = new Shader(basicVertexShader, basicFragmentShader);
         shaders.put("Basic", basicShader);
+        Shader basicTextureShader = new Shader(basicTextureVertexShader, basicTextureFragmentShader);
+        shaders.put("BasicTexture", basicTextureShader);
     }
 
     public void use(String shaderName) {
@@ -44,6 +48,16 @@ public class ShaderManager {
             Shader shader = shaders.get(shaderName);
             shader.use();
             shader.uniformMat4(mat, uniform);
+        } else {
+            throw new RuntimeException("Shader " + shaderName + " not found.");
+        }
+    }
+
+    public void uniform1i(String shaderName, int i, String uniform) {
+        if (shaders.containsKey(shaderName)) {
+            Shader shader = shaders.get(shaderName);
+            shader.use();
+            shader.uniform1i(i, uniform);
         } else {
             throw new RuntimeException("Shader " + shaderName + " not found.");
         }
