@@ -97,4 +97,14 @@ public class Shader {
             System.err.println("Exception while setting uniform " + name);
         }
     }
+
+    public void uniform1f(float f, String name) {
+        int location = getUniformLocation(name);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            glUniform1f(location, f);
+        } catch (Exception e) {
+            System.err.println("Exception while setting uniform " + name);
+        }
+    }
+
 }

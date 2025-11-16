@@ -62,4 +62,14 @@ public class ShaderManager {
             throw new RuntimeException("Shader " + shaderName + " not found.");
         }
     }
+
+    public void uniform1f(String shaderName, float f, String uniform) {
+        if (shaders.containsKey(shaderName)) {
+            Shader shader = shaders.get(shaderName);
+            shader.use();
+            shader.uniform1f(f, uniform);
+        } else {
+            throw new RuntimeException("Shader " + shaderName + " not found.");
+        }
+    }
 }
