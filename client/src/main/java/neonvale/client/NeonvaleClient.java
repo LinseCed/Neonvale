@@ -1,5 +1,6 @@
 package neonvale.client;
 
+import neonvale.client.core.Config;
 import neonvale.client.core.GameLoop;
 import neonvale.client.core.assets.Model;
 import neonvale.client.core.assets.ModelLoader;
@@ -9,10 +10,14 @@ import neonvale.client.input.KeyCallback;
 import neonvale.client.resources.ShaderManager;
 import org.joml.Matrix4f;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import static org.lwjgl.opengl.GL11.*;
 
 
 public class NeonvaleClient {
+    Logger logger = Logger.getLogger(NeonvaleClient.class.getName());
     private float time = 0f;
 
     private Window window;
@@ -36,6 +41,9 @@ public class NeonvaleClient {
         keyCallback = KeyCallback.getInstance();
         shape = ModelLoader.load("assets/mh.glb");
         shape2 = ModelLoader.load("assets/abi.glb");
+        if (Config.enableWireframe) {
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        }
         glEnable(GL_CULL_FACE);
         glEnable(GL_DEPTH_TEST);
     }
@@ -51,7 +59,6 @@ public class NeonvaleClient {
         if (this.window.shouldClose()) {
             this.gameLoop.stop();
         }
-
         keyCallback.pollInputs(window.getWindow(), delta);
     }
 
