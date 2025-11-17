@@ -49,9 +49,15 @@ public class Mesh {
     public void draw() {
         vao.bind();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture.getId());
+        if (texture != null) {
+            glBindTexture(GL_TEXTURE_2D, texture.getId());
+        }
         glDrawElements(GL_TRIANGLES, indices.limit(), GL_UNSIGNED_INT, 0);
         vao.unbind();
+    }
+
+    public void cleanup() {
+        vao.cleanup();
     }
 
 }
