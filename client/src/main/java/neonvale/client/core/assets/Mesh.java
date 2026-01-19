@@ -1,6 +1,7 @@
 package neonvale.client.core.assets;
 
 import neonvale.client.graphics.VAO;
+import neonvale.client.resources.ShaderManager;
 import org.lwjgl.assimp.AIMaterial;
 import org.lwjgl.assimp.AIMesh;
 import org.lwjgl.system.MemoryUtil;
@@ -14,18 +15,13 @@ import static org.lwjgl.opengl.GL13.glActiveTexture;
 
 public class Mesh {
 
-    private final FloatBuffer vertices;
-    private final FloatBuffer normals;
-    private final IntBuffer indices;
+    private int indicesCount;
     private final VAO vao;
     private final Texture texture;
-    private final FloatBuffer texCoords;
+
 
     public Mesh(FloatBuffer vertices, FloatBuffer normals, IntBuffer indices) {
-        this.vertices = vertices;
-        this.normals = normals;
-        this.indices = indices;
-        this.texCoords = null;
+        this.indicesCount = indices.limit();
         this.vao = new VAO(vertices, normals, indices);
         MemoryUtil.memFree(vertices);
         MemoryUtil.memFree(normals);
@@ -34,10 +30,7 @@ public class Mesh {
     }
 
     public Mesh(FloatBuffer vertices, FloatBuffer normals, IntBuffer indices, Texture texture, FloatBuffer texCoords) {
-        this.vertices = vertices;
-        this.normals = normals;
-        this.indices = indices;
-        this.texCoords = texCoords;
+        this.indicesCount = indices.limit();
         this.vao = new VAO(vertices, normals, indices, texCoords);
         MemoryUtil.memFree(vertices);
         MemoryUtil.memFree(normals);
@@ -47,13 +40,23 @@ public class Mesh {
     }
 
     public void draw() {
-        vao.bind();
-        glActiveTexture(GL_TEXTURE0);
-        if (texture != null) {
-            glBindTexture(GL_TEXTURE_2D, texture.getId());
+        if (meshHasTexture()) {
+            vao.bind();
+            glActiveTexture(GL_TEXTURE0);
+            if (texture != null) {
+                glBindTexture(GL_TEXTURE_2D, texture.getId());
+            }
+            glDrawElements(GL_TRIANGLES, this.indicesCount, GL_UNSIGNED_INT, 0);
+            vao.unbind();
+        } else {
+            vao.bind();
+            glDrawElements(GL_TRIANGLES, this.indicesCount, GL_UNSIGNED_INT, 0);
+            vao.unbind();
         }
-        glDrawElements(GL_TRIANGLES, indices.limit(), GL_UNSIGNED_INT, 0);
-        vao.unbind();
+    }
+
+    public boolean meshHasTexture() {
+        return this.texture != null;
     }
 
     public void cleanup() {

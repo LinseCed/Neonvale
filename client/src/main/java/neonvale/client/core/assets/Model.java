@@ -1,5 +1,7 @@
 package neonvale.client.core.assets;
 
+import neonvale.client.resources.ShaderManager;
+
 import java.util.ArrayList;
 import java.util.List;
 

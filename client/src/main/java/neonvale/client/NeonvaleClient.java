@@ -39,8 +39,8 @@ public class NeonvaleClient {
         this.shaderManager = ShaderManager.getInstance();
         this.gameLoop = new GameLoop();
         keyCallback = KeyCallback.getInstance();
-        shape = ModelLoader.load("assets/mh.glb");
-        shape2 = ModelLoader.load("assets/abi.glb");
+        shape = ModelLoader.load("assets/shape.glb");
+        shape2 = ModelLoader.load("assets/shape.glb");
         if (Config.enableWireframe) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
@@ -62,10 +62,9 @@ public class NeonvaleClient {
         keyCallback.pollInputs(window.getWindow(), delta);
     }
 
-    private Matrix4f model = new Matrix4f();
     private void render(float delta) {
         this.window.clear();
-        model = new Matrix4f().translate(5f, 0.0f, 0.0f);
+        Matrix4f model = new Matrix4f().translate(5f, 0.0f, 0.0f);
         this.shaderManager.use("BasicTexture");
         this.shaderManager.uniformMat4("BasicTexture", camera.getViewMatrix(), "uView");
         this.shaderManager.uniformMat4("BasicTexture", camera.getProjectionMatrix(), "uProj");
