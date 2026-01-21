@@ -36,6 +36,9 @@ public class Material {
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, metallicRoughnessMap);
 
-        shader.uniform4f(baseColorFactor, "baseColorFactor");
+        shader.uniform4f(baseColorFactor, "uBaseColorFactor");
+        shader.uniform1f(metallicFactor, "uMetallicFactor");
+        shader.uniform1f(roughness, "uRoughness");
+        shader.uniform3f(emissiveFactor, "uEmissiveFactor");
     }
 }

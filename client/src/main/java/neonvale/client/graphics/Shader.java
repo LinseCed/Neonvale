@@ -1,6 +1,7 @@
 package neonvale.client.graphics;
 
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.system.MemoryStack;
 
@@ -112,6 +113,15 @@ public class Shader {
         int location = getUniformLocation(name);
         try (MemoryStack stack = MemoryStack.stackPush()) {
             glUniform4f(location, f.x, f.y, f.z, f.w);
+        } catch (Exception e) {
+            System.err.println("Exception while setting uniform " + name);
+        }
+    }
+
+    public void uniform3f(Vector3f f, String name) {
+        int location = getUniformLocation(name);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            glUniform3f(location, f.x, f.y, f.z);
         } catch (Exception e) {
             System.err.println("Exception while setting uniform " + name);
         }
