@@ -6,6 +6,14 @@ in vec3 Normal;
 
 const float PI = 3.14159265359;
 
+uniform sampler2D albedoMap;
+uniform sampler2D normalMap;
+uniform sampler2D metallicMap;
+uniform sampler2D roughnessMap;
+uniform sampler2D aoMap;
+
+uniform vec3 camPos;
+
 float trowbridgeReitz(float n, float m, float roughness) {
     float a2 = roughness * roughness;
     float NdotM = max(dot(n, m), 0.0);
@@ -38,5 +46,11 @@ vec3 fresnelSchlick(float cosTheata, vec3 F0) {
 
 void main() {
     vec3 N = normalize(Normal);
-    vec3 V = normalize();
+    vec3 V = normalize(camPos - WorldPos);
+
+    vec3 albedo = pow(texture(albedoMap, TexCoords), 2.2);
+
+
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, albedo, )
 }
