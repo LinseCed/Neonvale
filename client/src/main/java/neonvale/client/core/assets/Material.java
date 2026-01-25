@@ -9,23 +9,26 @@ import static org.lwjgl.opengl.GL11.glBindTexture;
 import static org.lwjgl.opengl.GL13.*;
 
 public class Material {
-    private Shader shader;
-    private int albedoTex;
-    private int normalTex;
-    private int metallicRoughnessMap;
-    private int occlusionTex;
-    private int emissiveTex;
+    public int albedoTex;
+    public int normalTex;
+    public int metallicRoughnessMap;
+    public int occlusionTex;
+    public int emissiveTex;
+    public String name;
 
-    private Vector4f baseColorFactor = new Vector4f(1, 1, 1, 1);
-    private float metallicFactor = 1.0f;
-    private float roughness = 1.0f;
-    private Vector3f emissiveFactor = new Vector3f(0, 0, 0);
+    public Vector4f baseColorFactor = new Vector4f(1, 1, 1, 1);
+    public float metallicFactor = 1.0f;
+    public float roughness = 1.0f;
+    public Vector3f emissiveFactor = new Vector3f(0, 0, 0);
 
-    private boolean hasNormalMap;
-    private boolean hasEmissive;
+    public boolean hasNormalMap;
+    public boolean hasEmissive;
 
-    public void bindMaterial() {
-        this.shader.use();
+    public Material() {
+    }
+
+    public void bindMaterial(Shader shader) {
+        shader.use();
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, albedoTex);

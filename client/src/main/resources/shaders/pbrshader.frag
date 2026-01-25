@@ -4,6 +4,8 @@ in vec2 TexCoords;
 in vec3 WorldPos;
 in vec3 Normal;
 
+uniform vec3 cam_pos;
+
 const float PI = 3.14159265359;
 
 uniform sampler2D albedoMap;
@@ -46,11 +48,5 @@ vec3 fresnelSchlick(float cosTheata, vec3 F0) {
 
 void main() {
     vec3 N = normalize(Normal);
-    vec3 V = normalize(camPos - WorldPos);
-
-    vec3 albedo = pow(texture(albedoMap, TexCoords), 2.2);
-
-
-    vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedo, )
+    vec3 V = normalize();
 }
