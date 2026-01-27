@@ -39,7 +39,7 @@ public class NeonvaleClient {
         this.shaderManager = ShaderManager.getInstance();
         this.gameLoop = new GameLoop();
         keyCallback = KeyCallback.getInstance();
-        ModelLoader.load("../assets/Scene.gltf");
+        ModelLoader.load("../assets/SceneWithTexture.glb");
         if (Config.enableWireframe) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }

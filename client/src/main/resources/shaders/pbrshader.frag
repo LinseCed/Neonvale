@@ -48,5 +48,7 @@ vec3 fresnelSchlick(float cosTheata, vec3 F0) {
 
 void main() {
     vec3 N = normalize(Normal);
-    vec3 V = normalize();
+    vec3 V = normalize(cam_pos - WorldPos);
+
+    vec3 F0 = vec3(0.04);
 }
