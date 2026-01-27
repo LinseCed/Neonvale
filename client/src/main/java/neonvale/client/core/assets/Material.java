@@ -10,19 +10,17 @@ import static org.lwjgl.opengl.GL13.*;
 
 public class Material {
     public int albedoTex;
-    public int normalTex;
+    public int normalMap;
     public int metallicRoughnessMap;
-    public int occlusionTex;
-    public int emissiveTex;
     public String name;
 
     public Vector4f baseColorFactor = new Vector4f(1, 1, 1, 1);
     public float metallicFactor = 1.0f;
     public float roughness = 1.0f;
-    public Vector3f emissiveFactor = new Vector3f(0, 0, 0);
 
     public boolean hasNormalMap;
-    public boolean hasEmissive;
+    public boolean hasAlbedoTexture;
+    public boolean hasMetallicRoughnessTexture;
 
     public Material() {
     }
@@ -30,20 +28,27 @@ public class Material {
     public void bindMaterial(Shader shader) {
         shader.use();
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, albedoTex);
+        if (hasAlbedoTexture) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, albedoTex);
+        }
 
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, normalTex);
+        if (hasNormalMap) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, normalMap);
+        }
 
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, metallicRoughnessMap);
+        if (hasMetallicRoughnessTexture) {
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, metallicRoughnessMap);
+        }
 
         shader.uniform4f(baseColorFactor, "uBaseColorFactor");
         shader.uniform1f(metallicFactor, "uMetallicFactor");
         shader.uniform1f(roughness, "uRoughness");
-        shader.uniform3f(emissiveFactor, "uEmissiveFactor");
     }
+
+
 
     @Override
     public String toString() {

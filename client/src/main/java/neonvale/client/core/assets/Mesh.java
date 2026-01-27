@@ -20,6 +20,7 @@ public class Mesh {
     private int materialIndex;
     private boolean hasNormals;
     private boolean hasTextureCoordinates;
+    private boolean hasTangents;
 
     public Mesh(FloatBuffer vertices, FloatBuffer normals, IntBuffer indices) {
         this.indicesCount = indices.limit();
@@ -50,12 +51,20 @@ public class Mesh {
         return this.hasTextureCoordinates;
     }
 
+    public boolean hasTangents() {
+        return this.hasTangents;
+    }
+
     public void hasNormals(boolean hasNormals) {
         this.hasNormals = hasNormals;
     }
 
     public void setMaterialIndex(int materialIndex) {
         this.materialIndex = materialIndex;
+    }
+
+    public void hasTangents(boolean hasTangents) {
+        this.hasTangents = hasTangents;
     }
 
     public int getMaterialIndex() {

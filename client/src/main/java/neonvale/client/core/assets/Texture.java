@@ -14,7 +14,7 @@ public class Texture {
 
     private int id;
 
-    Texture(ByteBuffer encodedImage) {
+    Texture(ByteBuffer encodedImage, TextureColorSpace colorSpace) {
         STBImage.stbi_set_flip_vertically_on_load(true);
         IntBuffer w = BufferUtils.createIntBuffer(1);
         IntBuffer h = BufferUtils.createIntBuffer(1);
@@ -27,8 +27,8 @@ public class Texture {
 
         int texId = glGenTextures();
         glBindTexture(GL_TEXTURE_2D, texId);
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, w.get(), h.get(), 0, GL_RGBA, GL_UNSIGNED_BYTE, decoded);
+        int internalFormat = (colorSpace == TextureColorSpace.SRGB) ? GL_SRGB8_ALPHA8 : GL_RGBA8;
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, w.get(), h.get(), 0, GL_RGBA, GL_UNSIGNED_BYTE, decoded);
         glGenerateMipmap(GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

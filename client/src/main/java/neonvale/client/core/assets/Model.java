@@ -7,16 +7,12 @@ import java.util.List;
 
 public class Model {
 
-    private List<Mesh> meshes;
+    private final List<Mesh> meshes;
+    private final List<Material> materials;
+    private List<SubMesh> subMeshes;
 
-
-    public Model(List<Mesh> meshes) {
-        this.meshes = new ArrayList<>(meshes);
-    }
-
-    public void draw() {
-        for (Mesh mesh : meshes) {
-     
-        }
+    Model(List<Mesh> meshes, List<Material> materials) {
+        this.meshes = meshes;
+        this.materials = materials;
     }
 }
