@@ -51,6 +51,7 @@ public class ModelLoader {
                 material.baseColorFactor = new Vector4f(color.r(), color.g(), color.b(), color.a());
             }
 
+            // Albedo Texture
             AITexture albedoTex;
             AIString albedoTexpath = AIString.calloc();
             result = Assimp.aiGetMaterialTexture(mat, aiTextureType_BASE_COLOR, 0, albedoTexpath, (IntBuffer) null, (IntBuffer) null, (FloatBuffer) null, (IntBuffer) null, (IntBuffer) null, (IntBuffer) null);
@@ -60,7 +61,24 @@ public class ModelLoader {
 
             float[] tmp = new float[1];
 
+            // Metallic Factor
             result = Assimp.aiGetMaterialFloatArray(mat, AI_MATKEY_METALLIC_FACTOR, aiTextureType_NONE, 0, tmp,null);
+            if (result == aiReturn_SUCCESS) {
+                material.metallicFactor = tmp[0];
+            }
+
+            result = Assimp.aiGetMaterialFloatArray(mat, AI_MATKEY_ROUGHNESS_FACTOR, aiTextureType_NONE, 0, tmp,null);
+            if (result == aiReturn_SUCCESS) {
+                material.roughness = tmp[0];
+            }
+        }
+
+        for (int i = 0; i < scene.mNumMeshes(); i++) {
+            try (AIMesh mesh = AIMesh.create(scene.mMeshes().get(i))) {
+
+            } catch (Exception e) {
+                System.out.println(e.toString());
+            }
         }
     }
 }

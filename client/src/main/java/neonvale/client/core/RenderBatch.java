@@ -6,12 +6,12 @@ import org.joml.Matrix4f;
 
 import java.util.List;
 
-public class MeshBatch {
+public class RenderBatch {
     private Mesh mesh;
     private Material material;
     private List<Matrix4f> transforms;
 
-    public MeshBatch(Mesh mesh, Material material, List<Matrix4f> transforms) {
+    public RenderBatch(Mesh mesh, Material material, List<Matrix4f> transforms) {
         this.mesh = mesh;
         this.material = material;
         this.transforms = transforms;

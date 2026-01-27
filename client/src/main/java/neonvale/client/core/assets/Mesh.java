@@ -39,22 +39,6 @@ public class Mesh {
         this.texture = texture;
     }
 
-    public void draw() {
-        if (meshHasTexture()) {
-            vao.bind();
-            glActiveTexture(GL_TEXTURE0);
-            if (texture != null) {
-                glBindTexture(GL_TEXTURE_2D, texture.getId());
-            }
-            glDrawElements(GL_TRIANGLES, this.indicesCount, GL_UNSIGNED_INT, 0);
-            vao.unbind();
-        } else {
-            vao.bind();
-            glDrawElements(GL_TRIANGLES, this.indicesCount, GL_UNSIGNED_INT, 0);
-            vao.unbind();
-        }
-    }
-
     public boolean meshHasTexture() {
         return this.texture != null;
     }
