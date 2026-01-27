@@ -16,7 +16,7 @@ public class Model {
 
     public void draw() {
         for (Mesh mesh : meshes) {
-            mesh.draw();
+     
         }
     }
 }

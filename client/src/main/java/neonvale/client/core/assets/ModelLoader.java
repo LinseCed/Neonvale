@@ -12,6 +12,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static org.lwjgl.assimp.Assimp.*;
 import static org.lwjgl.system.MemoryUtil.memAllocFloat;
@@ -37,12 +38,13 @@ public class ModelLoader {
 
         for (int i = 0; i < scene.mNumMaterials(); i++) {
             Material material = new Material();
-            AIMaterial mat = AIMaterial.create(scene.mMaterials().get(i));
+            AIMaterial mat = AIMaterial.create(Objects.requireNonNull(scene.mMaterials()).get(i));
 
             // Material Name
             AIString name = AIString.calloc();
             Assimp.aiGetMaterialString(mat, Assimp.AI_MATKEY_NAME, aiTextureType_NONE, 0, name);
             material.name = name.dataString();
+            name.free();
 
             // Base Color Factor
             AIColor4D color = AIColor4D.create();
@@ -58,6 +60,7 @@ public class ModelLoader {
             if (result == aiReturn_SUCCESS) {
                 material.albedoTex = new Texture(albedoTexpath.data()).getId();
             }
+            albedoTexpath.free();
 
             float[] tmp = new float[1];
 
@@ -71,10 +74,63 @@ public class ModelLoader {
             if (result == aiReturn_SUCCESS) {
                 material.roughness = tmp[0];
             }
+
+            materials.add(material);
         }
 
+        System.out.println(materials.size());
+
         for (int i = 0; i < scene.mNumMeshes(); i++) {
-            try (AIMesh mesh = AIMesh.create(scene.mMeshes().get(i))) {
+            try (AIMesh mesh = AIMesh.create(Objects.requireNonNull(scene.mMeshes()).get(i))) {
+                Mesh neonvaleMesh = new Mesh();
+
+                int vertexCount = mesh.mNumVertices();
+                AIVector3D.Buffer vertices = mesh.mVertices();
+                FloatBuffer vertexBuffer = memAllocFloat(vertexCount * 3);
+                for (int j = 0; j < vertexCount; j++) {
+                    AIVector3D v = vertices.get(j);
+                    vertexBuffer.put(v.x()).put(v.y()).put(v.z());
+                }
+                vertexBuffer.flip();
+
+                int faceCount = mesh.mNumFaces();
+                AIFace.Buffer faces = mesh.mFaces();
+                IntBuffer indexBuffer = memAllocInt(faceCount * 3);
+                for (int j = 0; j < faceCount; j++) {
+                    AIFace face = faces.get(j);
+                    if (face.mNumIndices() != 3) {
+                        throw new RuntimeException("Non triangulated face detected.");
+                    }
+                }
+                indexBuffer.flip();
+
+                if (mesh.mNormals() != null) {
+                    neonvaleMesh.hasNormals(true);
+                    AIVector3D.Buffer normals = mesh.mNormals();
+                    FloatBuffer normalBuffer = memAllocFloat(vertexCount * 3);
+                    for (int j = 0; j < vertexCount; j++) {
+                        AIVector3D normal = normals.get(j);
+                        normalBuffer.put(normal.x()).put(normal.y()).put(normal.z());
+                    }
+                    normalBuffer.flip();
+                } else {
+                    neonvaleMesh.hasNormals(false);
+                }
+
+                if (mesh.mTextureCoords(0) != null) {
+                    neonvaleMesh.hasTextureCoordinates(true);
+                    AIVector3D.Buffer texCoords = mesh.mTextureCoords(0);
+                    FloatBuffer texCoordBuffer = memAllocFloat(vertexCount * 2);
+                    for (int j = 0; j < texCoordBuffer.limit(); j++) {
+                        AIVector3D texCoord = texCoords.get(j);
+                        texCoordBuffer.put(texCoord.x()).put(texCoord.y());
+                    }
+                    texCoordBuffer.flip();
+                } else {
+                    neonvaleMesh.hasTextureCoordinates(false);
+                }
+
+
 
             } catch (Exception e) {
                 System.out.println(e.toString());

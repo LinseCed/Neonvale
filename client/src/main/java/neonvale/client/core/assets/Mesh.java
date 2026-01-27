@@ -17,8 +17,9 @@ public class Mesh {
 
     private int indicesCount;
     private final VAO vao;
-    private final Texture texture;
-
+    private int materialIndex;
+    private boolean hasNormals;
+    private boolean hasTextureCoordinates;
 
     public Mesh(FloatBuffer vertices, FloatBuffer normals, IntBuffer indices) {
         this.indicesCount = indices.limit();
@@ -26,7 +27,6 @@ public class Mesh {
         MemoryUtil.memFree(vertices);
         MemoryUtil.memFree(normals);
         MemoryUtil.memFree(indices);
-        texture = null;
     }
 
     public Mesh(FloatBuffer vertices, FloatBuffer normals, IntBuffer indices, Texture texture, FloatBuffer texCoords) {
@@ -36,11 +36,34 @@ public class Mesh {
         MemoryUtil.memFree(normals);
         MemoryUtil.memFree(indices);
         MemoryUtil.memFree(texCoords);
-        this.texture = texture;
     }
 
-    public boolean meshHasTexture() {
-        return this.texture != null;
+    public Mesh() {
+        this.vao = null;
+    }
+
+    public boolean hasNormals() {
+        return hasNormals;
+    }
+
+    public boolean hasTextureCoordinates() {
+        return this.hasTextureCoordinates;
+    }
+
+    public void hasNormals(boolean hasNormals) {
+        this.hasNormals = hasNormals;
+    }
+
+    public void setMaterialIndex(int materialIndex) {
+        this.materialIndex = materialIndex;
+    }
+
+    public int getMaterialIndex() {
+        return this.materialIndex;
+    }
+
+    public void hasTextureCoordinates(boolean hasTextureCoordinates) {
+        this.hasTextureCoordinates = hasTextureCoordinates;
     }
 
     public void cleanup() {

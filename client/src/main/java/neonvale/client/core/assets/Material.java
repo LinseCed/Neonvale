@@ -44,4 +44,12 @@ public class Material {
         shader.uniform1f(roughness, "uRoughness");
         shader.uniform3f(emissiveFactor, "uEmissiveFactor");
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Material: \n");
+        sb.append("Name: ").append(name).append("\n");
+        return sb.toString();
+    }
 }
