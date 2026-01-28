@@ -2,9 +2,12 @@ package neonvale.client.core;
 
 import org.lwjgl.BufferUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.system.MemoryUtil.memAlloc;
 
 public class Util {
     public static int create1x1Texture(int r, int g, int b, int a) {
@@ -22,5 +25,17 @@ public class Util {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         return tex;
+    }
+
+    public static ByteBuffer readFileToBuffer(File file) {
+        try {
+            byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+            ByteBuffer buffer = memAlloc(bytes.length);
+            buffer.put(bytes);
+            buffer.flip();
+            return buffer;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load texture: " + file, e);
+        }
     }
 }

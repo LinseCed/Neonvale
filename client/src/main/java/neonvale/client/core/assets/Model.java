@@ -14,5 +14,12 @@ public class Model {
     Model(List<Mesh> meshes, List<Material> materials) {
         this.meshes = meshes;
         this.materials = materials;
+        this.subMeshes = new ArrayList<>();
+        for (int i = 0; i < meshes.size(); i++) {
+            SubMesh subMesh = new SubMesh();
+            subMesh.meshIndex = i;
+            subMesh.materialIndex = meshes.get(i).getMaterialIndex();
+            this.subMeshes.add(subMesh);
+        }
     }
 }

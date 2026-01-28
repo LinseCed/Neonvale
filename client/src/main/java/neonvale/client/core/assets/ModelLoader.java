@@ -1,10 +1,13 @@
 package neonvale.client.core.assets;
 
+import neonvale.client.core.Util;
+import neonvale.client.graphics.VAO;
 import org.joml.Vector4f;
 import org.lwjgl.assimp.*;
 
 import java.io.File;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -12,18 +15,18 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.lwjgl.assimp.Assimp.*;
-import static org.lwjgl.system.MemoryUtil.memAllocFloat;
-import static org.lwjgl.system.MemoryUtil.memAllocInt;
+import static org.lwjgl.system.MemoryUtil.*;
 
 public class ModelLoader {
 
     public static Model load(String path) {
         File jarDir;
         AIScene scene;
+        File shapeFile;
         try {
             jarDir = new File(ModelLoader.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
-            File shapeFile = new File(jarDir, path);
-            scene = aiImportFile(shapeFile.getAbsolutePath(), aiProcess_Triangulate);
+            shapeFile = new File(jarDir, path);
+            scene = aiImportFile(shapeFile.getAbsolutePath(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -54,8 +57,12 @@ public class ModelLoader {
             AIString albedoTexPath = AIString.calloc();
             result = Assimp.aiGetMaterialTexture(mat, aiTextureType_BASE_COLOR, 0, albedoTexPath, (IntBuffer) null, (IntBuffer) null, (FloatBuffer) null, (IntBuffer) null, (IntBuffer) null, (IntBuffer) null);
             if (result == aiReturn_SUCCESS) {
+                File modelDir = shapeFile.getParentFile();
+                File texFile = new File(modelDir, albedoTexPath.dataString());
+                ByteBuffer encodedImage = Util.readFileToBuffer(texFile);
+                material.albedoTex = new Texture(encodedImage, TextureColorSpace.SRGB).getId();
                 material.hasAlbedoTexture = true;
-                material.albedoTex = new Texture(albedoTexPath.data(), TextureColorSpace.SRGB).getId();
+                memFree(encodedImage);
             }
             albedoTexPath.free();
 
@@ -75,10 +82,14 @@ public class ModelLoader {
 
             // Metallic Roughness Texture
             AIString metallicRoughnessTexPath = AIString.calloc();
-            result = Assimp.aiGetMaterialTexture(mat, aiTextureType_UNKNOWN, 0, metallicRoughnessTexPath, (IntBuffer) null, (IntBuffer) null, (FloatBuffer) null, (IntBuffer) null, (IntBuffer) null, (IntBuffer) null);
+            result = Assimp.aiGetMaterialTexture(mat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, 0, metallicRoughnessTexPath, (IntBuffer) null, (IntBuffer) null, (FloatBuffer) null, (IntBuffer) null, (IntBuffer) null, (IntBuffer) null);
             if (result == aiReturn_SUCCESS) {
+                File modelDir = shapeFile.getParentFile();
+                File texFile = new File(modelDir, metallicRoughnessTexPath.dataString());
+                ByteBuffer encodedImage = Util.readFileToBuffer(texFile);
+                material.metallicRoughnessMap = new Texture(encodedImage, TextureColorSpace.LINEAR).getId();
                 material.hasMetallicRoughnessTexture = true;
-                material.metallicRoughnessMap = new Texture(metallicRoughnessTexPath.data(), TextureColorSpace.LINEAR).getId();
+                memFree(encodedImage);
             }
             metallicRoughnessTexPath.free();
 
@@ -87,7 +98,10 @@ public class ModelLoader {
 
         for (int i = 0; i < scene.mNumMeshes(); i++) {
             try (AIMesh mesh = AIMesh.create(Objects.requireNonNull(scene.mMeshes()).get(i))) {
-                Mesh neonvaleMesh = new Mesh();
+                boolean hasNormals;
+                boolean hasUVs;
+                boolean hasTangents;
+                VAO vao = new VAO();
 
                 int vertexCount = mesh.mNumVertices();
                 AIVector3D.Buffer vertices = mesh.mVertices();
@@ -97,6 +111,8 @@ public class ModelLoader {
                     vertexBuffer.put(v.x()).put(v.y()).put(v.z());
                 }
                 vertexBuffer.flip();
+                vao.addAttribute(0, 3, vertexBuffer);
+                memFree(vertexBuffer);
 
                 int faceCount = mesh.mNumFaces();
                 AIFace.Buffer faces = mesh.mFaces();
@@ -112,7 +128,7 @@ public class ModelLoader {
                 indexBuffer.flip();
 
                 if (mesh.mNormals() != null) {
-                    neonvaleMesh.hasNormals(true);
+                    hasNormals = true;
                     AIVector3D.Buffer normals = mesh.mNormals();
                     FloatBuffer normalBuffer = memAllocFloat(vertexCount * 3);
                     for (int j = 0; j < vertexCount; j++) {
@@ -120,12 +136,14 @@ public class ModelLoader {
                         normalBuffer.put(normal.x()).put(normal.y()).put(normal.z());
                     }
                     normalBuffer.flip();
+                    vao.addAttribute(1, 3, normalBuffer);
+                    memFree(normalBuffer);
                 } else {
-                    neonvaleMesh.hasNormals(false);
+                    hasNormals = false;
                 }
 
                 if (mesh.mTextureCoords(0) != null) {
-                    neonvaleMesh.hasTextureCoordinates(true);
+                    hasUVs = true;
                     AIVector3D.Buffer texCoords = mesh.mTextureCoords(0);
                     FloatBuffer texCoordBuffer = memAllocFloat(vertexCount * 2);
                     for (int j = 0; j < vertexCount; j++) {
@@ -133,26 +151,42 @@ public class ModelLoader {
                         texCoordBuffer.put(texCoord.x()).put(texCoord.y());
                     }
                     texCoordBuffer.flip();
+                    vao.addAttribute(2, 2, texCoordBuffer);
+                    memFree(texCoordBuffer);
                 } else {
-                    neonvaleMesh.hasTextureCoordinates(false);
+                    hasUVs = false;
                 }
 
-                if (mesh.mTangents() != null) {
-                    neonvaleMesh.hasTangents(true);
+                if (mesh.mTangents() != null && mesh.mBitangents() != null && mesh.mNormals() != null && mesh.mTextureCoords(0) != null) {
+                    hasTangents = true;
                     AIVector3D.Buffer tangents = mesh.mTangents();
-                    FloatBuffer tangentsBuffer = memAllocFloat(vertexCount * 3);
-                    for (int j = 0; j < tangentsBuffer.limit(); j++) {
+                    AIVector3D.Buffer bitangents = mesh.mBitangents();
+                    AIVector3D.Buffer normals = mesh.mNormals();
+                    FloatBuffer tangentsBuffer = memAllocFloat(vertexCount * 4);
+                    for (int j = 0; j < vertexCount; j++) {
                         AIVector3D tangent = tangents.get(j);
-                        tangentsBuffer.put(tangent.x()).put(tangent.y()).put(tangent.z());
+                        AIVector3D bitangent = bitangents.get(j);
+                        AIVector3D normal = normals.get(j);
+
+                        float cx = normal.y() * tangent.z() - normal.z() * tangent.y();
+                        float cy = normal.z() * tangent.x() - normal.x() * tangent.z();
+                        float cz = normal.x() * tangent.y() - normal.y() * tangent.x();
+
+                        float dot = cx * bitangent.x() + cy * bitangent.y() + cz * bitangent.z();
+
+                        float sign = dot < 0.0f ? -1.0f : 1.0f;
+
+                        tangentsBuffer.put(tangent.x()).put(tangent.y()).put(tangent.z()).put(sign);
                     }
                     tangentsBuffer.flip();
+                    vao.addAttribute(3, 4, tangentsBuffer);
+                    memFree(tangentsBuffer);
                 } else {
-                    neonvaleMesh.hasTangents(false);
+                    hasTangents = false;
                 }
-
-                neonvaleMesh.setMaterialIndex(mesh.mMaterialIndex());
-                meshes.add(neonvaleMesh);
-
+                vao.setIndices(indexBuffer);
+                meshes.add(new Mesh(vao, indexBuffer.limit(), mesh.mMaterialIndex(), hasNormals, hasUVs, hasTangents));
+                memFree(indexBuffer);
             } catch (Exception e) {
                 System.out.println(e.toString());
             }
