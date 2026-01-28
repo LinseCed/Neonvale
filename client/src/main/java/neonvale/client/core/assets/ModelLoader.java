@@ -206,9 +206,6 @@ public class ModelLoader {
         }
         List<SubMesh> subMeshes = new ArrayList<>();
         processNode(scene, scene.mRootNode(), new Matrix4f(), subMeshes, meshes);
-        for (SubMesh subMesh : subMeshes) {
-            System.out.println(subMesh.materialIndex);
-        }
         return new Model(meshes, materials, subMeshes);
     }
 

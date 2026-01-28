@@ -29,7 +29,8 @@ uniform vec3 uLightPosition;
 uniform vec3 uLightRadiance;
 
 float trowbridgeReitz(vec3 n, vec3 m, float roughness) {
-    float a2 = roughness * roughness;
+    float a = roughness * roughness;
+    float a2 = a * a;
     float NdotM = max(dot(n, m), 0.0);
     float NdotM2 = NdotM * NdotM;
 
@@ -41,12 +42,14 @@ float trowbridgeReitz(vec3 n, vec3 m, float roughness) {
 }
 
 float deltaGGXCorrelated(float NdotX, float roughness) {
-    float a2 = roughness * roughness;
+    float a = roughness * roughness;
+    float a2 = a * a;
+    NdotX = max(NdotX, 0.0000001);
     float r2 = NdotX * NdotX;
     return (-1 + sqrt(1.0 + a2 * (1.0 - r2) / r2)) * 0.5;
 }
 
-float G(vec3 N, vec3 L, vec3 V, float roughness) {
+float Geometry(vec3 N, vec3 L, vec3 V, float roughness) {
     float NdotL = max(dot(N, L), 0.0);
     float NdotV = max(dot(N, V), 0.0);
     float deltaL = deltaGGXCorrelated(NdotL, roughness);
@@ -101,15 +104,15 @@ void main() {
     vec3 L = normalize(uLightPosition - WorldPos);
     vec3 H = normalize(V + L);
     float distance = length(uLightPosition - WorldPos);
-    float attenuation = 1.0 / (distance * distance);
+    float attenuation = 1.0 / max((distance * distance), 0.000001);
     vec3 radiance = uLightRadiance * attenuation;
 
     float NDF = trowbridgeReitz(N, H, roughness);
-    float G = G(N, V, L, roughness);
+    float G = Geometry(N, L, V, roughness);
     vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
     vec3 numerator = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.00001;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.000001;
     vec3 specular = numerator / denominator;
 
     vec3 kD = vec3(1.0) - F;
