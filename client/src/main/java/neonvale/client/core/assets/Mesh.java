@@ -19,6 +19,11 @@ public class Mesh {
         this.hasNormals = hasNormals;
         this.hasUVs = hasUVs;
         this.hasTangents = hasTangents;
+        this.materialIndex = materialIndex;
+    }
+
+    public int getIndexCount() {
+        return this.indexCount;
     }
 
     public void bind() {

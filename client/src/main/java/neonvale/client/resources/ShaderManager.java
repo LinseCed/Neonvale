@@ -37,7 +37,7 @@ public class ShaderManager {
 
     public void use(String shaderName) {
         if (shaders.containsKey(shaderName)) {
-            shaders.get(shaderName).use();
+            shaders.get(shaderName).bind();
         } else {
             throw new RuntimeException("Shader " + shaderName + " not found.");
         }
@@ -46,7 +46,7 @@ public class ShaderManager {
     public void uniformMat4(String shaderName, Matrix4f mat, String uniform) {
         if (shaders.containsKey(shaderName)) {
             Shader shader = shaders.get(shaderName);
-            shader.use();
+            shader.bind();
             shader.uniformMat4(mat, uniform);
         } else {
             throw new RuntimeException("Shader " + shaderName + " not found.");
@@ -56,7 +56,7 @@ public class ShaderManager {
     public void uniform1i(String shaderName, int i, String uniform) {
         if (shaders.containsKey(shaderName)) {
             Shader shader = shaders.get(shaderName);
-            shader.use();
+            shader.bind();
             shader.uniform1i(i, uniform);
         } else {
             throw new RuntimeException("Shader " + shaderName + " not found.");
@@ -66,7 +66,7 @@ public class ShaderManager {
     public void uniform1f(String shaderName, float f, String uniform) {
         if (shaders.containsKey(shaderName)) {
             Shader shader = shaders.get(shaderName);
-            shader.use();
+            shader.bind();
             shader.uniform1f(f, uniform);
         } else {
             throw new RuntimeException("Shader " + shaderName + " not found.");

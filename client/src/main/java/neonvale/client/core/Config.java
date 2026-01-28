@@ -9,5 +9,5 @@ public class Config {
     public static float winAspect = (float) winWidth / winHeight;
     public static float movementSpeed = 5f;
     public static float mouseSensitivity = 0.1f;
-    public static boolean enableWireframe = true;
+    public static boolean enableWireframe = false;
 }

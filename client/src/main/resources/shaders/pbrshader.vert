@@ -17,7 +17,8 @@ out vec4 Tangent;
 
 void main(){
     UV = aUV;
-    Tangent = aTangent;
+    vec3 T = normalize(uNormalMatrix * aTangent.xyz);
+    Tangent = vec4(T, aTangent.w);
     WorldPos = vec3(uModel * vec4(aPos, 1.0));
     Normal = normalize(uNormalMatrix * aNormal);
     gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);

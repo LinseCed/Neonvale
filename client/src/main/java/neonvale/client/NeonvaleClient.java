@@ -1,15 +1,18 @@
 package neonvale.client;
 
-import neonvale.client.core.Config;
-import neonvale.client.core.GameLoop;
+import neonvale.client.core.*;
 import neonvale.client.core.assets.Model;
 import neonvale.client.core.assets.ModelLoader;
 import neonvale.client.graphics.Camera;
+import neonvale.client.graphics.Shader;
 import neonvale.client.graphics.Window;
 import neonvale.client.input.KeyCallback;
 import neonvale.client.resources.ShaderManager;
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,9 +27,10 @@ public class NeonvaleClient {
     private GameLoop gameLoop;
     private ShaderManager shaderManager;
     private Camera camera;
-    Model shape;
-    Model shape2;
+    private Renderer renderer;
     KeyCallback keyCallback;
+    private List<Renderable> renderableList = new ArrayList<>();
+    Light light = new Light();
 
     public static void main(String[] args) {
         NeonvaleClient neonvale = new NeonvaleClient();
@@ -39,7 +43,16 @@ public class NeonvaleClient {
         this.shaderManager = ShaderManager.getInstance();
         this.gameLoop = new GameLoop();
         keyCallback = KeyCallback.getInstance();
-        ModelLoader.load("../assets/SceneWithTexture.glb");
+        Model model = ModelLoader.load("../assets/SceneWithTexture.glb");
+        renderableList.add(new Renderable(model, new Matrix4f()));
+        Shader shader = new Shader("../shaders/pbrshader.vert", "../shaders/pbrshader.frag");
+        renderer = new Renderer(shader);
+        light.position = new Vector3f(0, 15, 0);
+        light.radiance = new Vector3f(100, 100, 100);
+        shader.bind();
+        shader.uniform3f(light.position, "uLightPosition");
+        shader.uniform3f(light.radiance, "uLightRadiance");
+        shader.unbind();
         if (Config.enableWireframe) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
@@ -63,6 +76,9 @@ public class NeonvaleClient {
 
     private void render(float delta) {
         this.window.clear();
+        for (Renderable r : renderableList) {
+            this.renderer.draw(r, camera);
+        }
         this.window.update();
     }
 

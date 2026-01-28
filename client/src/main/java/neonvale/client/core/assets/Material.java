@@ -1,7 +1,6 @@
 package neonvale.client.core.assets;
 
 import neonvale.client.graphics.Shader;
-import org.joml.Vector3f;
 import org.joml.Vector4f;
 
 import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
@@ -25,22 +24,37 @@ public class Material {
     public Material() {
     }
 
-    public void bindMaterial(Shader shader) {
-        shader.use();
+    public void applyToShader(Shader shader) {
+        shader.bind();
 
+        shader.uniform1b(hasAlbedoTexture, "uHasAlbedoTexture");
         if (hasAlbedoTexture) {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, albedoTex);
-        }
-
-        if (hasNormalMap) {
+            shader.uniform1i(0, "albedoMap");
+        } else {
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, normalMap);
+            glBindTexture(GL_TEXTURE_2D, 0);
         }
 
+        shader.uniform1b(hasNormalMap, "uHasNormalMap");
+        if (hasNormalMap) {
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, normalMap);
+            shader.uniform1i(1, "normalMap");
+        } else {
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, 0);
+        }
+
+        shader.uniform1b(hasMetallicRoughnessTexture, "uHasMetallicRoughnessTexture");
         if (hasMetallicRoughnessTexture) {
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, metallicRoughnessMap);
+            shader.uniform1i(2, "metallicRoughnessMap");
+        } else {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, 2);
         }
 
         shader.uniform4f(baseColorFactor, "uBaseColorFactor");

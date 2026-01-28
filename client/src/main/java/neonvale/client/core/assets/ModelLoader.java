@@ -2,7 +2,9 @@ package neonvale.client.core.assets;
 
 import neonvale.client.core.Util;
 import neonvale.client.graphics.VAO;
+import org.joml.Matrix4f;
 import org.joml.Vector4f;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.assimp.*;
 
 import java.io.File;
@@ -22,11 +24,11 @@ public class ModelLoader {
     public static Model load(String path) {
         File jarDir;
         AIScene scene;
-        File shapeFile;
+        File modelFile;
         try {
             jarDir = new File(ModelLoader.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
-            shapeFile = new File(jarDir, path);
-            scene = aiImportFile(shapeFile.getAbsolutePath(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
+            modelFile = new File(jarDir, path);
+            scene = aiImportFile(modelFile.getAbsolutePath(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -55,15 +57,27 @@ public class ModelLoader {
 
             // Albedo Texture
             AIString albedoTexPath = AIString.calloc();
-            result = Assimp.aiGetMaterialTexture(mat, aiTextureType_BASE_COLOR, 0, albedoTexPath, (IntBuffer) null, (IntBuffer) null, (FloatBuffer) null, (IntBuffer) null, (IntBuffer) null, (IntBuffer) null);
+            result = Assimp.aiGetMaterialTexture(mat, aiTextureType_BASE_COLOR, 0, albedoTexPath, (IntBuffer) null, null, null, null, null, null);
             if (result == aiReturn_SUCCESS) {
                 String texPath = albedoTexPath.dataString();
-                ByteBuffer data = loadTextureData(scene, shapeFile, texPath);
+                ByteBuffer data = loadTextureData(scene, modelFile, texPath);
                 material.albedoTex = new Texture(data, TextureColorSpace.SRGB).getId();
                 material.hasAlbedoTexture = true;
                 memFree(data);
             }
             albedoTexPath.free();
+
+            // Normal Map
+            AIString normalMapPath = AIString.calloc();
+            result = Assimp.aiGetMaterialTexture(mat, aiTextureType_NORMALS, 0, normalMapPath, (IntBuffer) null, null, null, null, null, null);
+            if (result == aiReturn_SUCCESS) {
+                String texPath = normalMapPath.dataString();
+                ByteBuffer data = loadTextureData(scene, modelFile, texPath);
+                material.normalMap = new Texture(data, TextureColorSpace.LINEAR).getId();
+                material.hasNormalMap = true;
+                memFree(data);
+            }
+            normalMapPath.free();
 
             float[] tmp = new float[1];
 
@@ -81,10 +95,10 @@ public class ModelLoader {
 
             // Metallic Roughness Texture
             AIString metallicRoughnessTexPath = AIString.calloc();
-            result = Assimp.aiGetMaterialTexture(mat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, 0, metallicRoughnessTexPath, (IntBuffer) null, (IntBuffer) null, (FloatBuffer) null, (IntBuffer) null, (IntBuffer) null, (IntBuffer) null);
+            result = Assimp.aiGetMaterialTexture(mat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, 0, metallicRoughnessTexPath, (IntBuffer) null, null, null, null, null, null);
             if (result == aiReturn_SUCCESS) {
                 String texPath = metallicRoughnessTexPath.dataString();
-                ByteBuffer data = loadTextureData(scene, shapeFile, texPath);
+                ByteBuffer data = loadTextureData(scene, modelFile, texPath);
                 material.metallicRoughnessMap = new Texture(data, TextureColorSpace.LINEAR).getId();
                 material.hasMetallicRoughnessTexture = true;
                 memFree(data);
@@ -190,7 +204,41 @@ public class ModelLoader {
                 System.out.println(e.toString());
             }
         }
-        return new Model(meshes, materials);
+        List<SubMesh> subMeshes = new ArrayList<>();
+        processNode(scene, scene.mRootNode(), new Matrix4f(), subMeshes, meshes);
+        for (SubMesh subMesh : subMeshes) {
+            System.out.println(subMesh.materialIndex);
+        }
+        return new Model(meshes, materials, subMeshes);
+    }
+
+    private static void processNode(AIScene scene, AINode node, Matrix4f parentTransform, List<SubMesh> subMeshes, List<Mesh> meshes) {
+        Matrix4f localTransform = Util.toMatrix4f(node.mTransformation());
+        Matrix4f globalTransform = new Matrix4f(parentTransform).mul(localTransform);
+
+        IntBuffer meshIndices = node.mMeshes();
+        if (meshIndices != null) {
+            for (int i = 0; i < node.mNumMeshes(); i++) {
+                int meshIndex = meshIndices.get(i);
+
+                SubMesh sm = new SubMesh();
+                sm.meshIndex = meshIndex;
+                sm.materialIndex = meshes.get(meshIndex).getMaterialIndex();
+                sm.localTransform = new Matrix4f(globalTransform);
+
+                subMeshes.add(sm);
+            }
+        }
+        float det = globalTransform.determinant();
+
+        if (det < 0) {
+            System.out.println("Warning: Negative determinante detected");
+        }
+
+        PointerBuffer children = node.mChildren();
+        for (int i = 0; i < node.mNumChildren(); i++) {
+            processNode(scene, AINode.create(children.get(i)), globalTransform, subMeshes, meshes);
+        }
     }
 
     private static ByteBuffer loadTextureData(AIScene scene, File modelFile, String texPath) {
@@ -203,8 +251,9 @@ public class ModelLoader {
             }
 
             ByteBuffer src = tex.pcDataCompressed();
+            ByteBuffer slice = src.slice(0, tex.mWidth());
             ByteBuffer copy = memAlloc(tex.mWidth());
-            copy.put(src.limit(tex.mWidth())).flip();
+            copy.put(slice).flip();
             return copy;
         } else {
             File texFile = new File(modelFile.getParentFile(), texPath);

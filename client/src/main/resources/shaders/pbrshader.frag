@@ -1,4 +1,4 @@
-#version 450 core
+#version 330 core
 out vec4 FragColor;
 in vec2 UV;
 in vec3 WorldPos;
@@ -7,25 +7,28 @@ in vec4 Tangent;
 
 const float PI = 3.14159265359;
 
-uniform vec3 cam_pos;
 uniform sampler2D albedoMap;
 uniform sampler2D normalMap;
 uniform sampler2D metallicRoughnessMap;
-uniform sampler2D aoMap;
-uniform int uHasNormalMap;
-uniform int uHasAlbedoTexture;
-uniform int uHasMetallicRoughnessTexture;
-uniform int uHasTangent;
-uniform int uHasUVs;
-uniform int uHasNormals;
+
+uniform bool uHasNormalMap;
+uniform bool uHasAlbedoTexture;
+uniform bool uHasMetallicRoughnessTexture;
 
 uniform vec4 uBaseColorFactor;
 uniform float uMetallicFactor;
 uniform float uRoughness;
 
+uniform bool uHasTangents;
+uniform bool uHasUVs;
+uniform bool uHasNormals;
+
 uniform vec3 camPos;
 
-float trowbridgeReitz(float n, float m, float roughness) {
+uniform vec3 uLightPosition;
+uniform vec3 uLightRadiance;
+
+float trowbridgeReitz(vec3 n, vec3 m, float roughness) {
     float a2 = roughness * roughness;
     float NdotM = max(dot(n, m), 0.0);
     float NdotM2 = NdotM * NdotM;
@@ -52,7 +55,7 @@ float G(vec3 N, vec3 L, vec3 V, float roughness) {
 }
 
 vec3 fresnelSchlick(float cosTheata, vec3 F0) {
-    return F0 + (1 - F0) * pow(1 - cosTheata, 5.0);
+    return F0 + (1 - F0) * pow(clamp(1 - cosTheata, 0.0, 1.0), 5.0);
 }
 
 void main() {
@@ -61,17 +64,17 @@ void main() {
     vec4 albedo = uBaseColorFactor;
     vec3 N;
 
-    if (uHasUVs != 0 && uHasAlbedoTexture) {
+    if (uHasUVs && uHasAlbedoTexture) {
         albedo *= texture(albedoMap, UV);
     }
 
-    if (uHasUVs != 0 && uHasMetallicRoughnessTexture !=0) {
+    if (uHasUVs && uHasMetallicRoughnessTexture) {
         vec4 mr = texture(metallicRoughnessMap, UV);
         roughness *= mr.g;
         metallic *= mr.b;
     }
 
-    if (uHasNormals != 0) {
+    if (uHasNormals) {
         N = normalize(Normal);
     } else {
         vec3 dpdx = dFdx(WorldPos);
@@ -79,16 +82,51 @@ void main() {
         N = normalize(cross(dpdx, dpdy));
     }
 
-    if (uHasNormals != 0 && uHasUVs != 0 && uHasNormalMap != 0 && uHasTangent) {
+    if (uHasNormals && uHasUVs && uHasNormalMap && uHasTangents) {
         vec3 tangentNormal = texture(normalMap, UV).xyz * 2.0 - 1.0;
         vec3 T = normalize(Tangent.xyz);
+        T = normalize(T - N * dot(N, T));
         vec3 B = Tangent.w * normalize(cross(N, T));
         mat3 TBN = mat3(T, B, N);
         N = normalize(TBN * tangentNormal);
     }
 
-    vec3 V = normalize(cam_pos - WorldPos);
+    vec3 V = normalize(camPos - WorldPos);
 
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo.rgb, metallic);
+
+    vec3 LO = vec3(0.0);
+
+    vec3 L = normalize(uLightPosition - WorldPos);
+    vec3 H = normalize(V + L);
+    float distance = length(uLightPosition - WorldPos);
+    float attenuation = 1.0 / (distance * distance);
+    vec3 radiance = uLightRadiance * attenuation;
+
+    float NDF = trowbridgeReitz(N, H, roughness);
+    float G = G(N, V, L, roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.00001;
+    vec3 specular = numerator / denominator;
+
+    vec3 kD = vec3(1.0) - F;
+
+    kD *= 1.0 - metallic;
+
+    float NdotL = max(dot(N, L), 0.0);
+
+    LO += (kD * vec3(albedo) / PI + specular) * radiance * NdotL;
+
+    vec3 ambient = vec3(0.03) * vec3(albedo);
+
+    vec3 color = ambient + LO;
+
+    color = pow(color, vec3(1.0/2.2));
+
+    vec3 n = normalize(Normal);
+    FragColor = vec4(color, 1.0);
+
 }

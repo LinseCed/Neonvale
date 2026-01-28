@@ -9,17 +9,32 @@ public class Model {
 
     private final List<Mesh> meshes;
     private final List<Material> materials;
-    private List<SubMesh> subMeshes;
+    private final List<SubMesh> subMeshes;
 
-    Model(List<Mesh> meshes, List<Material> materials) {
+    Model(List<Mesh> meshes, List<Material> materials, List<SubMesh> subMeshes) {
         this.meshes = meshes;
         this.materials = materials;
-        this.subMeshes = new ArrayList<>();
-        for (int i = 0; i < meshes.size(); i++) {
-            SubMesh subMesh = new SubMesh();
-            subMesh.meshIndex = i;
-            subMesh.materialIndex = meshes.get(i).getMaterialIndex();
-            this.subMeshes.add(subMesh);
-        }
+        this.subMeshes = subMeshes;
+    }
+
+    public List<Material> getMaterials() {
+        return this.materials;
+    }
+
+    public List<Mesh> getMeshes() {
+        return this.meshes;
+    }
+
+    public List<SubMesh> getSubMeshes() {
+        return this.subMeshes;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Model: \n");
+        sb.append("Meshcount: ").append(meshes.size()).append("\n");
+        sb.append("Materialcount: ").append(materials.size()).append("\n");
+        return sb.toString();
     }
 }

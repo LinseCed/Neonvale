@@ -1,5 +1,6 @@
 package neonvale.client.graphics;
 
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -55,20 +56,36 @@ public class Shader {
         int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(vertexShader, vertexShaderSource);
         glCompileShader(vertexShader);
+        int status = glGetShaderi(vertexShader, GL_COMPILE_STATUS);
+        if (status == GL_FALSE) {
+            System.err.println(glGetShaderInfoLog(vertexShader));
+        }
         glShaderSource(fragmentShader, fragmentShaderSource);
         glCompileShader(fragmentShader);
+        status = glGetShaderi(fragmentShader, GL_COMPILE_STATUS);
+        if (status == GL_FALSE) {
+            System.err.println(glGetShaderInfoLog(fragmentShader));
+        }
 
         this.id = glCreateProgram();
         glAttachShader(this.id, vertexShader);
         glAttachShader(this.id, fragmentShader);
         glLinkProgram(this.id);
+        status = glGetProgrami(this.id, GL_LINK_STATUS);
+        if (status == GL_FALSE) {
+            System.err.println(glGetProgramInfoLog(this.id));
+        }
         glValidateProgram(this.id);
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
     }
 
-    public void use() {
+    public void bind() {
         glUseProgram(this.id);
+    }
+
+    public void unbind() {
+        glUseProgram(0);
     }
 
     private int getUniformLocation(String name) {
@@ -86,6 +103,15 @@ public class Shader {
         int location = getUniformLocation(name);
         try (MemoryStack stack = MemoryStack.stackPush()) {
             glUniformMatrix4fv(location, false, mat.get(stack.mallocFloat(16)));
+        } catch (Exception e) {
+            System.err.println("Exception while setting uniform mat4 " + name);
+        }
+    }
+
+    public void uniformMat3(Matrix3f mat, String name) {
+        int location = getUniformLocation(name);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            glUniformMatrix3fv(location, false, mat.get(stack.mallocFloat(9)));
         } catch (Exception e) {
             System.err.println("Exception while setting uniform mat4 " + name);
         }

@@ -1,6 +1,9 @@
 package neonvale.client.core.assets;
 
+import org.joml.Matrix4f;
+
 public class SubMesh {
-    int materialIndex;
-    int meshIndex;
+    public int materialIndex;
+    public int meshIndex;
+    public Matrix4f localTransform;
 }
