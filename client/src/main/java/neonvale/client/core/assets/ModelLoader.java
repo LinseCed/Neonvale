@@ -57,12 +57,11 @@ public class ModelLoader {
             AIString albedoTexPath = AIString.calloc();
             result = Assimp.aiGetMaterialTexture(mat, aiTextureType_BASE_COLOR, 0, albedoTexPath, (IntBuffer) null, (IntBuffer) null, (FloatBuffer) null, (IntBuffer) null, (IntBuffer) null, (IntBuffer) null);
             if (result == aiReturn_SUCCESS) {
-                File modelDir = shapeFile.getParentFile();
-                File texFile = new File(modelDir, albedoTexPath.dataString());
-                ByteBuffer encodedImage = Util.readFileToBuffer(texFile);
-                material.albedoTex = new Texture(encodedImage, TextureColorSpace.SRGB).getId();
+                String texPath = albedoTexPath.dataString();
+                ByteBuffer data = loadTextureData(scene, shapeFile, texPath);
+                material.albedoTex = new Texture(data, TextureColorSpace.SRGB).getId();
                 material.hasAlbedoTexture = true;
-                memFree(encodedImage);
+                memFree(data);
             }
             albedoTexPath.free();
 
@@ -84,12 +83,12 @@ public class ModelLoader {
             AIString metallicRoughnessTexPath = AIString.calloc();
             result = Assimp.aiGetMaterialTexture(mat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, 0, metallicRoughnessTexPath, (IntBuffer) null, (IntBuffer) null, (FloatBuffer) null, (IntBuffer) null, (IntBuffer) null, (IntBuffer) null);
             if (result == aiReturn_SUCCESS) {
-                File modelDir = shapeFile.getParentFile();
-                File texFile = new File(modelDir, metallicRoughnessTexPath.dataString());
-                ByteBuffer encodedImage = Util.readFileToBuffer(texFile);
-                material.metallicRoughnessMap = new Texture(encodedImage, TextureColorSpace.LINEAR).getId();
+                String texPath = metallicRoughnessTexPath.dataString();
+                ByteBuffer data = loadTextureData(scene, shapeFile, texPath);
+                material.metallicRoughnessMap = new Texture(data, TextureColorSpace.LINEAR).getId();
                 material.hasMetallicRoughnessTexture = true;
-                memFree(encodedImage);
+                memFree(data);
+
             }
             metallicRoughnessTexPath.free();
 
@@ -193,4 +192,24 @@ public class ModelLoader {
         }
         return new Model(meshes, materials);
     }
+
+    private static ByteBuffer loadTextureData(AIScene scene, File modelFile, String texPath) {
+        if (texPath.startsWith("*")) {
+            int index = Integer.parseInt(texPath.substring(1));
+            AITexture tex = AITexture.create(scene.mTextures().get(index));
+
+            if (tex.mHeight() != 0) {
+                throw new UnsupportedOperationException("Uncompressed embedded textures not supported yet");
+            }
+
+            ByteBuffer src = tex.pcDataCompressed();
+            ByteBuffer copy = memAlloc(tex.mWidth());
+            copy.put(src.limit(tex.mWidth())).flip();
+            return copy;
+        } else {
+            File texFile = new File(modelFile.getParentFile(), texPath);
+            return Util.readFileToBuffer(texFile);
+        }
+    }
+
 }
