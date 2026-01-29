@@ -11,10 +11,6 @@ uniform sampler2D albedoMap;
 uniform sampler2D normalMap;
 uniform sampler2D metallicRoughnessMap;
 
-uniform bool uHasNormalMap;
-uniform bool uHasAlbedoTexture;
-uniform bool uHasMetallicRoughnessTexture;
-
 uniform vec4 uBaseColorFactor;
 uniform float uMetallicFactor;
 uniform float uRoughness;
@@ -67,11 +63,11 @@ void main() {
     vec4 albedo = uBaseColorFactor;
     vec3 N;
 
-    if (uHasUVs && uHasAlbedoTexture) {
+    if (uHasUVs) {
         albedo *= texture(albedoMap, UV);
     }
 
-    if (uHasUVs && uHasMetallicRoughnessTexture) {
+    if (uHasUVs) {
         vec4 mr = texture(metallicRoughnessMap, UV);
         roughness *= mr.g;
         metallic *= mr.b;
@@ -85,7 +81,7 @@ void main() {
         N = normalize(cross(dpdx, dpdy));
     }
 
-    if (uHasNormals && uHasUVs && uHasNormalMap && uHasTangents) {
+    if (uHasNormals && uHasUVs && uHasTangents) {
         vec3 tangentNormal = texture(normalMap, UV).xyz * 2.0 - 1.0;
         vec3 T = normalize(Tangent.xyz);
         T = normalize(T - N * dot(N, T));

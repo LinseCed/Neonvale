@@ -17,5 +17,4 @@ public class RenderCommand {
         this.material = material;
         this.transform = transform;
     }
-
 }

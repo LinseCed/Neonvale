@@ -29,7 +29,6 @@ public class NeonvaleClient {
     private Camera camera;
     private Renderer renderer;
     KeyCallback keyCallback;
-    private List<Renderable> renderableList = new ArrayList<>();
     Light light = new Light();
 
     public static void main(String[] args) {
@@ -44,7 +43,6 @@ public class NeonvaleClient {
         this.gameLoop = new GameLoop();
         keyCallback = KeyCallback.getInstance();
         Model model = ModelLoader.load("../assets/SceneWithTexture.glb");
-        renderableList.add(new Renderable(model, new Matrix4f()));
         Shader shader = new Shader("../shaders/pbrshader.vert", "../shaders/pbrshader.frag");
         renderer = new Renderer(shader);
         light.position = new Vector3f(0, 15, 0);
@@ -76,9 +74,7 @@ public class NeonvaleClient {
 
     private void render(float delta) {
         this.window.clear();
-        for (Renderable r : renderableList) {
-            this.renderer.draw(r, camera);
-        }
+        this.renderer.draw(camera);
         this.window.update();
     }
 

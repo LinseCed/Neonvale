@@ -30,29 +30,11 @@ public class Renderer {
         this.renderQueue = new ArrayList<>();
     }
 
-    public void draw(Renderable renderable, Camera camera) {
+    public void draw(Camera camera) {
         shader.bind();
 
         shader.uniformMat4(camera.getViewMatrix(), "uView");
         shader.uniformMat4(camera.getProjectionMatrix(), "uProj");
-
-        for (SubMesh sm : renderable.model.getSubMeshes()) {
-            Mesh mesh = renderable.model.getMeshes().get(sm.meshIndex);
-            Material material = renderable.model.getMaterials().get(sm.materialIndex);
-
-            bindMaterial(material);
-            Matrix4f submeshTransform = new Matrix4f(renderable.transform).mul(sm.localTransform);
-
-            shader.uniformMat4(submeshTransform, "uModel");
-            Matrix3f normalMatrix = new Matrix3f();
-            submeshTransform.normal(normalMatrix);
-            shader.uniformMat3(normalMatrix, "uNormalMatrix");
-            mesh.bind();
-            shader.uniform1b(mesh.hasNormals(), "uHasNormals");
-            shader.uniform1b(mesh.hasTangents(), "uHasTangents");
-            shader.uniform1b(mesh.hasUVs(), "uHasUVs");
-            glDrawElements(GL_TRIANGLES, mesh.getIndexCount(), GL_UNSIGNED_INT, 0);
-        }
 
         Mesh currentMesh = null;
         Material currentMaterial = null;
@@ -64,8 +46,16 @@ public class Renderer {
             }
 
             if (!c.mesh.equals(currentMesh)) {
+                bindMesh(c.mesh);
                 currentMesh = c.mesh;
-            }
+            };
+
+            shader.uniformMat4(c.transform, "uModel");
+            Matrix3f normalMatrix = new Matrix3f();
+            c.transform.normal(normalMatrix);
+            shader.uniformMat3(normalMatrix, "uNormalMatrix");
+
+            glDrawElements(GL_TRIANGLES, currentMesh.getIndexCount(), GL_UNSIGNED_INT, 0);
         }
 
         shader.unbind();
@@ -74,39 +64,30 @@ public class Renderer {
     private void bindMaterial(Material material) {
         shader.bind();
 
-        shader.uniform1b(material.hasAlbedoTexture, "uHasAlbedoTexture");
-        if (material.hasAlbedoTexture) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, material.albedoTex);
-            shader.uniform1i(0, "albedoMap");
-        } else {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, 0);
-        }
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, material.albedoTex);
+        shader.uniform1i(0, "albedoMap");
 
-        shader.uniform1b(material.hasNormalMap, "uHasNormalMap");
-        if (material.hasNormalMap) {
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, material.normalMap);
-            shader.uniform1i(1, "normalMap");
-        } else {
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, 0);
-        }
 
-        shader.uniform1b(material.hasMetallicRoughnessTexture, "uHasMetallicRoughnessTexture");
-        if (material.hasMetallicRoughnessTexture) {
-            glActiveTexture(GL_TEXTURE2);
-            glBindTexture(GL_TEXTURE_2D, material.metallicRoughnessMap);
-            shader.uniform1i(2, "metallicRoughnessMap");
-        } else {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, 2);
-        }
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, material.normalMap);
+        shader.uniform1i(1, "normalMap");
+
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, material.metallicRoughnessMap);
+        shader.uniform1i(2, "metallicRoughnessMap");
+
 
         shader.uniform4f(material.baseColorFactor, "uBaseColorFactor");
         shader.uniform1f(material.metallicFactor, "uMetallicFactor");
         shader.uniform1f(material.roughness, "uRoughness");
+    }
+
+    private void bindMesh(Mesh mesh) {
+        mesh.bind();
+        shader.uniform1b(mesh.hasNormals(), "uHasNormals");
+        shader.uniform1b(mesh.hasTangents(), "uHasTangents");
+        shader.uniform1b(mesh.hasUVs(), "uHasUVs");
     }
 
     public void addToRenderQueue(RenderCommand command) {
