@@ -5,12 +5,20 @@ import java.util.List;
 
 public class Scene {
 
-    private List<MeshData> meshData;
+    public List<MeshData> meshData;
     public List<TransformComponent> transforms;
-    private List<PointLightComponent> pointLights;
+    public List<PointLightComponent> pointLights;
 
-    private List<RenderObject> renderObjects;
-    private List<PointLightObject> pointLightObjects;
+    public List<RenderObject> renderObjects;
+    public List<PointLightObject> pointLightObjects;
+
+    public Scene() {
+        this.meshData = new ArrayList<>();
+        this.transforms = new ArrayList<>();
+        this.pointLights = new ArrayList<>();
+        this.renderObjects = new ArrayList<>();
+        this.pointLightObjects = new ArrayList<>();
+    }
 
     @Override
     public String toString() {

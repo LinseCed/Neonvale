@@ -10,10 +10,10 @@ public class TransformComponent {
     public Vector3f position;
     public Quaternionf rotation;
     public Vector3f scale;
-    public Matrix4f worldTansform;
+    public Matrix4f worldtransform;
     int parentID = NONE_INDEX;
     int firstChildID = NONE_INDEX;
     int nextSiblingID = NONE_INDEX;
 
-    public TransformComponent(Vector3f position, Quaternionf rotation, Vector3f scale, Matrix4f worldTansform, int parentID, int firstChildID, int nextSiblingID) {}
+    public TransformComponent(Vector3f position, Quaternionf rotation, Vector3f scale, Matrix4f worldtransform, int parentID, int firstChildID, int nextSiblingID) {}
 }

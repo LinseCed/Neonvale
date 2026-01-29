@@ -9,9 +9,7 @@ import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.lwjgl.assimp.Assimp.*;
 import static org.lwjgl.system.MemoryUtil.*;
@@ -22,6 +20,7 @@ public class ModelLoader {
         File jarDir;
         AIScene assimpScene;
         File modelFile;
+        Map<Integer, Integer> meshCache = new HashMap<>();
         try {
             jarDir = new File(ModelLoader.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
             modelFile = new File(jarDir, path);
@@ -39,13 +38,12 @@ public class ModelLoader {
 
         AINode rootNode = assimpScene.mRootNode();
 
-        processNode(scene, assimpScene, rootNode, TransformComponent.NONE_INDEX);
+        processNode(scene, assimpScene, rootNode, TransformComponent.NONE_INDEX, meshCache);
 
         return scene;
     }
 
-    private static void processNode(Scene scene, AIScene aiScene, AINode node, int parentID) {
-        Matrix4f localTransform = Util.toMatrix4f(node.mTransformation());
+    private static void processNode(Scene scene, AIScene aiScene, AINode node, int parentID, Map<Integer, Integer> meshCache) {
         int transformID = scene.transforms.size();
         scene.transforms.add(new TransformComponent(
                 new Vector3f(0.0f),
@@ -56,13 +54,108 @@ public class ModelLoader {
                 TransformComponent.NONE_INDEX,
                 TransformComponent.NONE_INDEX
         ));
-        Matrix4f globalTransform = new Matrix4f(scene.transforms.get(parentID).worldTansform).mul(localTransform);
+
+        Matrix4f transform = Util.toMatrix4f(node.mTransformation());
+        Vector3f position = new Vector3f();
+        Quaternionf rotation = new Quaternionf();
+        Vector3f scale = new Vector3f();
+        transform.getTranslation(position);
+        transform.getUnnormalizedRotation(rotation);
+        rotation.normalize();
+        transform.getScale(scale);
+
+        TransformComponent t = scene.transforms.get(transformID);
+
+        t.position = position;
+        t.rotation = rotation;
+        t.scale = scale;
+
+        scene.transforms.get(transformID).parentID = parentID;
+
+        if (parentID != TransformComponent.NONE_INDEX) {
+            TransformComponent parent = scene.transforms.get(parentID);
+            if (parent.firstChildID == TransformComponent.NONE_INDEX) {
+                parent.firstChildID = transformID;
+            } else {
+                int sibling = parent.firstChildID;
+                while (scene.transforms.get(sibling).nextSiblingID != TransformComponent.NONE_INDEX) {
+                    sibling = scene.transforms.get(sibling).nextSiblingID;
+                }
+                scene.transforms.get(sibling).nextSiblingID = transformID;
+            }
+        }
+
+        Matrix4f local = new Matrix4f().translate(t.position).rotate(t.rotation).scale(t.scale);
+
+        if (t.parentID != TransformComponent.NONE_INDEX) {
+            t.worldtransform = new Matrix4f(scene.transforms.get(parentID).worldtransform).mul(local);
+        } else {
+            t.worldtransform = local;
+        }
+
+        IntBuffer meshIndices = node.mMeshes();
+        if (meshIndices != null) {
+            for (int i = 0; i < node.mNumMeshes(); i++) {
+                int meshIndex = meshIndices.get(i);
+                AIMesh mesh = AIMesh.create(aiScene.mMeshes().get(meshIndex));
+                Integer meshDataID = meshCache.get(meshIndex);
+                if (meshDataID == null) {
+
+                    meshDataID = scene.meshData.size();
+
+                    MeshData meshData = buildMeshData(mesh);
+                    scene.meshData.add(meshData);
+
+                    meshCache.put(meshIndex, meshDataID);
+                }
+                int materialIndex = mesh.mMaterialIndex();
+                scene.renderObjects.add(new RenderObject(meshDataID, transformID, materialIndex));
+            }
+        }
 
         PointerBuffer children = node.mChildren();
         for (int i = 0; i < node.mNumChildren(); i++) {
             AINode child = AINode.create(children.get(i));
-            processNode(scene, aiScene, child, transformID);
+            processNode(scene, aiScene, child, transformID, meshCache);
         }
+    }
+
+    private static MeshData buildMeshData(AIMesh mesh) {
+        AIVector3D.Buffer aiVertices = mesh.mVertices();
+        AIVector3D.Buffer aiNormals = mesh.mNormals();
+        AIVector3D.Buffer aiUVs = mesh.mTextureCoords(0);
+
+        int vertexCount = mesh.mNumVertices();
+        Vertex[] vertices = new Vertex[vertexCount];
+
+        for (int v = 0; v < vertexCount; v++) {
+            vertices[v] = new Vertex();
+            AIVector3D pos = aiVertices.get(v);
+            vertices[v].pos = new Vector3f(pos.x(), pos.y(), pos.z());
+
+            if (aiNormals != null) {
+                AIVector3D normal = aiNormals.get(v);
+                vertices[v].normal = new Vector3f(normal.x(), normal.y(), normal.z());
+            }
+
+            if (aiUVs != null) {
+                AIVector3D uv = aiUVs.get(v);
+                vertices[v].uv = new Vector2f(uv.x(), uv.y());
+            }
+        }
+
+        int faceCount = mesh.mNumFaces();
+        int[] indices = new int[faceCount * 3];
+
+        AIFace.Buffer faces = mesh.mFaces();
+        for (int f = 0; f < faceCount; f++) {
+            AIFace face = faces.get(f);
+            indices[f * 3] = face.mIndices().get(0);
+            indices[f * 3 + 1] = face.mIndices().get(1);
+            indices[f * 3 + 2] = face.mIndices().get(2);
+        }
+
+        return new MeshData(vertices, indices);
     }
 
     private static List<Material> loadMaterials(AIScene scene, File modelFile) {
