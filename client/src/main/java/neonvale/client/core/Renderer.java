@@ -2,18 +2,14 @@ package neonvale.client.core;
 
 import neonvale.client.core.assets.Material;
 import neonvale.client.core.assets.Mesh;
-import neonvale.client.core.assets.SubMesh;
 import neonvale.client.graphics.Camera;
 import neonvale.client.graphics.Shader;
 import org.joml.Matrix3f;
-import org.joml.Matrix4f;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE1;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE2;

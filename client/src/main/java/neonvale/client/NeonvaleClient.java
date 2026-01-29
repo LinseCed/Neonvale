@@ -1,19 +1,15 @@
 package neonvale.client;
 
 import neonvale.client.core.*;
-import neonvale.client.core.assets.Model;
+import neonvale.client.core.assets.Scene;
 import neonvale.client.core.assets.ModelLoader;
 import neonvale.client.graphics.Camera;
 import neonvale.client.graphics.Shader;
 import neonvale.client.graphics.Window;
 import neonvale.client.input.KeyCallback;
 import neonvale.client.resources.ShaderManager;
-import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.lwjgl.opengl.GL11.*;
@@ -42,7 +38,7 @@ public class NeonvaleClient {
         this.shaderManager = ShaderManager.getInstance();
         this.gameLoop = new GameLoop();
         keyCallback = KeyCallback.getInstance();
-        Model model = ModelLoader.load("../assets/SceneWithTexture.glb");
+        Scene scene = ModelLoader.load("../assets/SceneWithTexture.glb");
         Shader shader = new Shader("../shaders/pbrshader.vert", "../shaders/pbrshader.frag");
         renderer = new Renderer(shader);
         light.position = new Vector3f(0, 15, 0);

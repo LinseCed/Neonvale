@@ -1,16 +1,13 @@
 package neonvale.client.core.assets;
 
 import neonvale.client.core.Util;
-import neonvale.client.graphics.VAO;
-import org.joml.Matrix4f;
-import org.joml.Vector4f;
+import org.joml.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.assimp.*;
 
 import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,23 +18,55 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 public class ModelLoader {
 
-    public static Model load(String path) {
+    public static Scene load(String path) {
         File jarDir;
-        AIScene scene;
+        AIScene assimpScene;
         File modelFile;
         try {
             jarDir = new File(ModelLoader.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
             modelFile = new File(jarDir, path);
-            scene = aiImportFile(modelFile.getAbsolutePath(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
+            assimpScene = aiImportFile(modelFile.getAbsolutePath(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
-        if (scene == null || scene.mRootNode() == null) {
+        if (assimpScene == null || assimpScene.mRootNode() == null) {
             throw new RuntimeException("Failed to load Model: " + path);
         }
-        List<Mesh> meshes = new ArrayList<>();
-        List<Material> materials = new ArrayList<>();
 
+        Scene scene = new Scene();
+
+        List<Material> materials = loadMaterials(assimpScene, modelFile);
+
+        AINode rootNode = assimpScene.mRootNode();
+
+        processNode(scene, assimpScene, rootNode, TransformComponent.NONE_INDEX);
+
+        return scene;
+    }
+
+    private static void processNode(Scene scene, AIScene aiScene, AINode node, int parentID) {
+        Matrix4f localTransform = Util.toMatrix4f(node.mTransformation());
+        int transformID = scene.transforms.size();
+        scene.transforms.add(new TransformComponent(
+                new Vector3f(0.0f),
+                new Quaternionf(),
+                new Vector3f(1.0f),
+                new Matrix4f().identity(),
+                TransformComponent.NONE_INDEX,
+                TransformComponent.NONE_INDEX,
+                TransformComponent.NONE_INDEX
+        ));
+        Matrix4f globalTransform = new Matrix4f(scene.transforms.get(parentID).worldTansform).mul(localTransform);
+
+        PointerBuffer children = node.mChildren();
+        for (int i = 0; i < node.mNumChildren(); i++) {
+            AINode child = AINode.create(children.get(i));
+            processNode(scene, aiScene, child, transformID);
+        }
+    }
+
+    private static List<Material> loadMaterials(AIScene scene, File modelFile) {
+        List<Material> materials = new ArrayList<>();
         for (int i = 0; i < scene.mNumMaterials(); i++) {
             Material material = new Material();
             AIMaterial mat = AIMaterial.create(Objects.requireNonNull(scene.mMaterials()).get(i));
@@ -62,7 +91,6 @@ public class ModelLoader {
                 String texPath = albedoTexPath.dataString();
                 ByteBuffer data = loadTextureData(scene, modelFile, texPath);
                 material.albedoTex = new Texture(data, TextureColorSpace.SRGB).getId();
-                material.hasAlbedoTexture = true;
                 memFree(data);
             }
             albedoTexPath.free();
@@ -74,7 +102,6 @@ public class ModelLoader {
                 String texPath = normalMapPath.dataString();
                 ByteBuffer data = loadTextureData(scene, modelFile, texPath);
                 material.normalMap = new Texture(data, TextureColorSpace.LINEAR).getId();
-                material.hasNormalMap = true;
                 memFree(data);
             }
             normalMapPath.free();
@@ -100,7 +127,6 @@ public class ModelLoader {
                 String texPath = metallicRoughnessTexPath.dataString();
                 ByteBuffer data = loadTextureData(scene, modelFile, texPath);
                 material.metallicRoughnessMap = new Texture(data, TextureColorSpace.LINEAR).getId();
-                material.hasMetallicRoughnessTexture = true;
                 memFree(data);
 
             }
@@ -108,134 +134,7 @@ public class ModelLoader {
 
             materials.add(material);
         }
-
-        for (int i = 0; i < scene.mNumMeshes(); i++) {
-            try (AIMesh mesh = AIMesh.create(Objects.requireNonNull(scene.mMeshes()).get(i))) {
-                boolean hasNormals;
-                boolean hasUVs;
-                boolean hasTangents;
-                VAO vao = new VAO();
-
-                int vertexCount = mesh.mNumVertices();
-                AIVector3D.Buffer vertices = mesh.mVertices();
-                FloatBuffer vertexBuffer = memAllocFloat(vertexCount * 3);
-                for (int j = 0; j < vertexCount; j++) {
-                    AIVector3D v = vertices.get(j);
-                    vertexBuffer.put(v.x()).put(v.y()).put(v.z());
-                }
-                vertexBuffer.flip();
-                vao.addAttribute(0, 3, vertexBuffer);
-                memFree(vertexBuffer);
-
-                int faceCount = mesh.mNumFaces();
-                AIFace.Buffer faces = mesh.mFaces();
-                IntBuffer indexBuffer = memAllocInt(faceCount * 3);
-                for (int j = 0; j < faceCount; j++) {
-                    AIFace face = faces.get(j);
-                    if (face.mNumIndices() != 3) {
-                        throw new RuntimeException("Non triangulated face detected.");
-                    }
-                    IntBuffer indices = face.mIndices();
-                    indexBuffer.put(indices.get(0)).put(indices.get(1)).put(indices.get(2));
-                }
-                indexBuffer.flip();
-
-                if (mesh.mNormals() != null) {
-                    hasNormals = true;
-                    AIVector3D.Buffer normals = mesh.mNormals();
-                    FloatBuffer normalBuffer = memAllocFloat(vertexCount * 3);
-                    for (int j = 0; j < vertexCount; j++) {
-                        AIVector3D normal = normals.get(j);
-                        normalBuffer.put(normal.x()).put(normal.y()).put(normal.z());
-                    }
-                    normalBuffer.flip();
-                    vao.addAttribute(1, 3, normalBuffer);
-                    memFree(normalBuffer);
-                } else {
-                    hasNormals = false;
-                }
-
-                if (mesh.mTextureCoords(0) != null) {
-                    hasUVs = true;
-                    AIVector3D.Buffer texCoords = mesh.mTextureCoords(0);
-                    FloatBuffer texCoordBuffer = memAllocFloat(vertexCount * 2);
-                    for (int j = 0; j < vertexCount; j++) {
-                        AIVector3D texCoord = texCoords.get(j);
-                        texCoordBuffer.put(texCoord.x()).put(texCoord.y());
-                    }
-                    texCoordBuffer.flip();
-                    vao.addAttribute(2, 2, texCoordBuffer);
-                    memFree(texCoordBuffer);
-                } else {
-                    hasUVs = false;
-                }
-
-                if (mesh.mTangents() != null && mesh.mBitangents() != null && mesh.mNormals() != null && mesh.mTextureCoords(0) != null) {
-                    hasTangents = true;
-                    AIVector3D.Buffer tangents = mesh.mTangents();
-                    AIVector3D.Buffer bitangents = mesh.mBitangents();
-                    AIVector3D.Buffer normals = mesh.mNormals();
-                    FloatBuffer tangentsBuffer = memAllocFloat(vertexCount * 4);
-                    for (int j = 0; j < vertexCount; j++) {
-                        AIVector3D tangent = tangents.get(j);
-                        AIVector3D bitangent = bitangents.get(j);
-                        AIVector3D normal = normals.get(j);
-
-                        float cx = normal.y() * tangent.z() - normal.z() * tangent.y();
-                        float cy = normal.z() * tangent.x() - normal.x() * tangent.z();
-                        float cz = normal.x() * tangent.y() - normal.y() * tangent.x();
-
-                        float dot = cx * bitangent.x() + cy * bitangent.y() + cz * bitangent.z();
-
-                        float sign = dot < 0.0f ? -1.0f : 1.0f;
-
-                        tangentsBuffer.put(tangent.x()).put(tangent.y()).put(tangent.z()).put(sign);
-                    }
-                    tangentsBuffer.flip();
-                    vao.addAttribute(3, 4, tangentsBuffer);
-                    memFree(tangentsBuffer);
-                } else {
-                    hasTangents = false;
-                }
-                vao.setIndices(indexBuffer);
-                meshes.add(new Mesh(vao, indexBuffer.limit(), mesh.mMaterialIndex(), hasNormals, hasUVs, hasTangents));
-                memFree(indexBuffer);
-            } catch (Exception e) {
-                System.out.println(e.toString());
-            }
-        }
-        List<SubMesh> subMeshes = new ArrayList<>();
-        processNode(scene, scene.mRootNode(), new Matrix4f(), subMeshes, meshes);
-        return new Model(meshes, materials, subMeshes);
-    }
-
-    private static void processNode(AIScene scene, AINode node, Matrix4f parentTransform, List<SubMesh> subMeshes, List<Mesh> meshes) {
-        Matrix4f localTransform = Util.toMatrix4f(node.mTransformation());
-        Matrix4f globalTransform = new Matrix4f(parentTransform).mul(localTransform);
-
-        IntBuffer meshIndices = node.mMeshes();
-        if (meshIndices != null) {
-            for (int i = 0; i < node.mNumMeshes(); i++) {
-                int meshIndex = meshIndices.get(i);
-
-                SubMesh sm = new SubMesh();
-                sm.meshIndex = meshIndex;
-                sm.materialIndex = meshes.get(meshIndex).getMaterialIndex();
-                sm.localTransform = new Matrix4f(globalTransform);
-
-                subMeshes.add(sm);
-            }
-        }
-        float det = globalTransform.determinant();
-
-        if (det < 0) {
-            System.out.println("Warning: Negative determinante detected");
-        }
-
-        PointerBuffer children = node.mChildren();
-        for (int i = 0; i < node.mNumChildren(); i++) {
-            processNode(scene, AINode.create(children.get(i)), globalTransform, subMeshes, meshes);
-        }
+        return materials;
     }
 
     private static ByteBuffer loadTextureData(AIScene scene, File modelFile, String texPath) {
