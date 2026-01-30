@@ -1,29 +1,77 @@
 package neonvale.client.core;
 
-import neonvale.client.core.assets.Material;
-import neonvale.client.core.assets.Mesh;
+import neonvale.client.core.assets.*;
 import neonvale.client.graphics.Camera;
+import neonvale.client.graphics.MeshGPU;
 import neonvale.client.graphics.Shader;
 import org.joml.Matrix3f;
+import org.lwjgl.BufferUtils;
 
+import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE1;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE2;
 import static org.lwjgl.opengl.GL13.glActiveTexture;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
+import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
+import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+import static org.lwjgl.system.MemoryUtil.memAlloc;
 
 public class Renderer {
 
     private final Shader shader;
 
-    List<RenderCommand> renderQueue;
+    Map<Integer, MeshGPU> meshes;
 
     public Renderer(Shader shader) {
         this.shader = shader;
-        this.renderQueue = new ArrayList<>();
+    }
+
+    public void addScene(Scene scene) {
+        for (int i = 0; i < scene.materials.size(); i++) {
+            MeshData md = scene.meshData.get(i);
+            meshes.put(i, createGPUMesh(md));
+        }
+    }
+
+    private MeshGPU createGPUMesh(MeshData md) {
+        MeshGPU gpuMesh = new MeshGPU();
+        gpuMesh.vao = glGenVertexArrays();
+        gpuMesh.vbo = glGenBuffers();
+        gpuMesh.ebo = glGenBuffers();
+        glBindVertexArray(gpuMesh.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, gpuMesh.vbo);
+        int verticesNum = md.vertices.length;
+        FloatBuffer data = memAlloc(Vertex.size * verticesNum).asFloatBuffer();
+        for (int i = 0; i < verticesNum; i++) {
+            data.put(md.vertices[i].pos.x);
+            data.put(md.vertices[i].pos.y);
+            data.put(md.vertices[i].pos.z);
+            data.put(md.vertices[i].normal.x);
+            data.put(md.vertices[i].normal.y);
+            data.put(md.vertices[i].normal.z);
+            data.put(md.vertices[i].uv.x);
+            data.put(md.vertices[i].uv.y);
+            data.put(md.vertices[i].tangent.x);
+            data.put(md.vertices[i].tangent.y);
+            data.put(md.vertices[i].tangent.z);
+            data.put(md.vertices[i].tangent.w);
+        }
+        glBufferData(GL_ARRAY_BUFFER, data, GL_STATIC_DRAW);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, 0);
+        glEnableVertexAttribArray(0);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gpuMesh.ebo);
+        glBindVertexArray(0);
+        return gpuMesh;
     }
 
     public void draw(Camera camera) {
@@ -32,65 +80,8 @@ public class Renderer {
         shader.uniformMat4(camera.getViewMatrix(), "uView");
         shader.uniformMat4(camera.getProjectionMatrix(), "uProj");
 
-        Mesh currentMesh = null;
-        Material currentMaterial = null;
 
-        for (RenderCommand c : renderQueue) {
-            if (!c.material.equals(currentMaterial)) {
-                bindMaterial(c.material);
-                currentMaterial = c.material;
-            }
-
-            if (!c.mesh.equals(currentMesh)) {
-                bindMesh(c.mesh);
-                currentMesh = c.mesh;
-            };
-
-            shader.uniformMat4(c.transform, "uModel");
-            Matrix3f normalMatrix = new Matrix3f();
-            c.transform.normal(normalMatrix);
-            shader.uniformMat3(normalMatrix, "uNormalMatrix");
-
-            glDrawElements(GL_TRIANGLES, currentMesh.getIndexCount(), GL_UNSIGNED_INT, 0);
-        }
 
         shader.unbind();
-    }
-
-    private void bindMaterial(Material material) {
-        shader.bind();
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, material.albedoTex);
-        shader.uniform1i(0, "albedoMap");
-
-
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, material.normalMap);
-        shader.uniform1i(1, "normalMap");
-
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, material.metallicRoughnessMap);
-        shader.uniform1i(2, "metallicRoughnessMap");
-
-
-        shader.uniform4f(material.baseColorFactor, "uBaseColorFactor");
-        shader.uniform1f(material.metallicFactor, "uMetallicFactor");
-        shader.uniform1f(material.roughness, "uRoughness");
-    }
-
-    private void bindMesh(Mesh mesh) {
-        mesh.bind();
-        shader.uniform1b(mesh.hasNormals(), "uHasNormals");
-        shader.uniform1b(mesh.hasTangents(), "uHasTangents");
-        shader.uniform1b(mesh.hasUVs(), "uHasUVs");
-    }
-
-    public void addToRenderQueue(RenderCommand command) {
-        renderQueue.add(command);
-    }
-
-    public void sortRenderCommands() {
-
     }
 }

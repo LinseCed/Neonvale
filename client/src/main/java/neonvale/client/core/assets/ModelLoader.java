@@ -35,7 +35,7 @@ public class ModelLoader {
         Scene scene = new Scene();
 
         List<Material> materials = loadMaterials(assimpScene, modelFile);
-
+        scene.materials = materials;
         AINode rootNode = assimpScene.mRootNode();
 
         processNode(scene, assimpScene, rootNode, TransformComponent.NONE_INDEX, meshCache);
@@ -124,6 +124,8 @@ public class ModelLoader {
         AIVector3D.Buffer aiVertices = mesh.mVertices();
         AIVector3D.Buffer aiNormals = mesh.mNormals();
         AIVector3D.Buffer aiUVs = mesh.mTextureCoords(0);
+        AIVector3D.Buffer aiTangents = mesh.mTangents();
+        AIVector3D.Buffer aiBitangents = mesh.mBitangents();
 
         int vertexCount = mesh.mNumVertices();
         Vertex[] vertices = new Vertex[vertexCount];
@@ -136,11 +138,31 @@ public class ModelLoader {
             if (aiNormals != null) {
                 AIVector3D normal = aiNormals.get(v);
                 vertices[v].normal = new Vector3f(normal.x(), normal.y(), normal.z());
+            } else {
+                vertices[v].normal = new Vector3f(0.5f, 0.5f, 1f);
             }
 
             if (aiUVs != null) {
                 AIVector3D uv = aiUVs.get(v);
                 vertices[v].uv = new Vector2f(uv.x(), uv.y());
+            } else {
+                vertices[v].uv = new Vector2f(0.5f, 0.5f);
+            }
+
+            if (aiTangents != null && aiBitangents != null && aiNormals != null) {
+                AIVector3D tangent = aiTangents.get(v);
+                AIVector3D bitangent = aiBitangents.get(v);
+                AIVector3D normal = aiNormals.get(v);
+
+                float cx = normal.y() * tangent.z() - normal.z() * tangent.y();
+                float cy = normal.z() * tangent.x() - normal.x() * tangent.z();
+                float cz = normal.x() * tangent.y() - normal.y() * tangent.x();
+
+                float dot = cx * bitangent.x() + cy * bitangent.y() + cz * bitangent.z();
+
+                float sign = dot < 0.0f ? -1.0f : 1.0f;
+
+                vertices[v].tangent = new Vector4f(tangent.x(), tangent.y(), tangent.z(), sign);
             }
         }
 

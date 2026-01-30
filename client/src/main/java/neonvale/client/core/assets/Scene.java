@@ -11,6 +11,7 @@ public class Scene {
 
     public List<RenderObject> renderObjects;
     public List<PointLightObject> pointLightObjects;
+    public List<Material> materials;
 
     public Scene() {
         this.meshData = new ArrayList<>();
