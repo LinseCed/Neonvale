@@ -19,7 +19,7 @@ public class Camera {
 
     public static Camera getInstance() {
         if (instance == null) {
-            instance = new Camera(new Vector3f(0, 0, 2));
+            instance = new Camera(new Vector3f(0, 1.7f, 5.0f));
         }
         return instance;
     }

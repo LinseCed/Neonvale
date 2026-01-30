@@ -138,7 +138,7 @@ public class ModelLoader {
                 AIVector3D normal = aiNormals.get(v);
                 vertices[v].normal = new Vector3f(normal.x(), normal.y(), normal.z());
             } else {
-                vertices[v].normal = new Vector3f(0.0f, 0.0f, 1f);
+                vertices[v].normal = new Vector3f(0.5f, 0.5f, 1f);
             }
 
             if (aiUVs != null) {

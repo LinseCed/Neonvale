@@ -12,6 +12,7 @@ import org.joml.Vector3f;
 
 import java.util.logging.Logger;
 
+import static org.lwjgl.glfw.GLFW.glfwGetTime;
 import static org.lwjgl.opengl.GL11.*;
 
 
@@ -27,6 +28,7 @@ public class NeonvaleClient {
     KeyCallback keyCallback;
     Light light = new Light();
     Scene scene;
+    Shader shader;
 
     public static void main(String[] args) {
         NeonvaleClient neonvale = new NeonvaleClient();
@@ -39,10 +41,10 @@ public class NeonvaleClient {
         this.shaderManager = ShaderManager.getInstance();
         this.gameLoop = new GameLoop();
         keyCallback = KeyCallback.getInstance();
-        scene = ModelLoader.load("../assets/SceneWithTexture.glb");
-        Shader shader = new Shader("../shaders/pbrshader.vert", "../shaders/pbrshader.frag");
+        scene = ModelLoader.load("../assets/ManWalls.glb");
+        shader = new Shader("../shaders/pbrshader.vert", "../shaders/pbrshader.frag");
         renderer = new Renderer(shader);
-        light.position = new Vector3f(0, 15, 0);
+        light.position = new Vector3f(0, 0, 0);
         light.radiance = new Vector3f(100, 100, 100);
         shader.bind();
         shader.uniform3f(light.position, "uLightPosition");
@@ -72,6 +74,10 @@ public class NeonvaleClient {
     private void render(float delta) {
         this.window.clear();
         this.renderer.draw(scene, camera);
+        shader.bind();
+        this.light.position = new Vector3f((float) Math.sin(glfwGetTime()) * 10);
+        shader.uniform3f(light.position, "uLightPosition");
+        shader.bind();
         this.window.update();
     }
 
