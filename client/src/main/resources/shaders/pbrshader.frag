@@ -15,10 +15,6 @@ uniform vec4 uBaseColorFactor;
 uniform float uMetallicFactor;
 uniform float uRoughness;
 
-uniform bool uHasTangents;
-uniform bool uHasUVs;
-uniform bool uHasNormals;
-
 uniform vec3 camPos;
 
 uniform vec3 uLightPosition;
@@ -63,32 +59,21 @@ void main() {
     vec4 albedo = uBaseColorFactor;
     vec3 N;
 
-    if (uHasUVs) {
-        albedo *= texture(albedoMap, UV);
-    }
+    albedo *= texture(albedoMap, UV);
 
-    if (uHasUVs) {
-        vec4 mr = texture(metallicRoughnessMap, UV);
-        roughness *= mr.g;
-        metallic *= mr.b;
-    }
+    vec4 mr = texture(metallicRoughnessMap, UV);
+    roughness *= mr.g;
+    metallic *= mr.b;
 
-    if (uHasNormals) {
-        N = normalize(Normal);
-    } else {
-        vec3 dpdx = dFdx(WorldPos);
-        vec3 dpdy = dFdy(WorldPos);
-        N = normalize(cross(dpdx, dpdy));
-    }
+    N = normalize(Normal);
 
-    if (uHasNormals && uHasUVs && uHasTangents) {
-        vec3 tangentNormal = texture(normalMap, UV).xyz * 2.0 - 1.0;
-        vec3 T = normalize(Tangent.xyz);
-        T = normalize(T - N * dot(N, T));
-        vec3 B = Tangent.w * normalize(cross(N, T));
-        mat3 TBN = mat3(T, B, N);
-        N = normalize(TBN * tangentNormal);
-    }
+
+    vec3 tangentNormal = texture(normalMap, UV).xyz * 2.0 - 1.0;
+    vec3 T = normalize(Tangent.xyz);
+    T = normalize(T - N * dot(N, T));
+    vec3 B = Tangent.w * normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+    N = normalize(TBN * tangentNormal);
 
     vec3 V = normalize(camPos - WorldPos);
 

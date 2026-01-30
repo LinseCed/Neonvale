@@ -1,12 +1,13 @@
 package neonvale.client.core.assets;
 
 public class RenderObject {
-    public int meshID;
-    public int transformID;
-    public int materialID;
+    public MeshData meshData;
+    public TransformComponent transformComponent;
+    public Material material;
 
-    public RenderObject(int meshID, int transformID, int materialID) {
-        this.meshID = meshID;
-        this.transformID = transformID;
+    public RenderObject(MeshData meshData, TransformComponent transformComponent, Material material) {
+        this.meshData = meshData;
+        this.transformComponent = transformComponent;
+        this.material = material;
     }
 }

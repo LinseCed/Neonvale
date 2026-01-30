@@ -34,8 +34,7 @@ public class ModelLoader {
 
         Scene scene = new Scene();
 
-        List<Material> materials = loadMaterials(assimpScene, modelFile);
-        scene.materials = materials;
+        scene.materials = loadMaterials(assimpScene, modelFile);
         AINode rootNode = assimpScene.mRootNode();
 
         processNode(scene, assimpScene, rootNode, TransformComponent.NONE_INDEX, meshCache);
@@ -88,9 +87,9 @@ public class ModelLoader {
         Matrix4f local = new Matrix4f().translate(t.position).rotate(t.rotation).scale(t.scale);
 
         if (t.parentID != TransformComponent.NONE_INDEX) {
-            t.worldtransform = new Matrix4f(scene.transforms.get(parentID).worldtransform).mul(local);
+            t.worldTransform = new Matrix4f(scene.transforms.get(parentID).worldTransform).mul(local);
         } else {
-            t.worldtransform = local;
+            t.worldTransform = local;
         }
 
         IntBuffer meshIndices = node.mMeshes();
@@ -109,7 +108,7 @@ public class ModelLoader {
                     meshCache.put(meshIndex, meshDataID);
                 }
                 int materialIndex = mesh.mMaterialIndex();
-                scene.renderObjects.add(new RenderObject(meshDataID, transformID, materialIndex));
+                scene.renderObjects.add(new RenderObject(scene.meshData.get(meshDataID), scene.transforms.get(transformID), scene.materials.get(materialIndex)));
             }
         }
 
@@ -139,14 +138,14 @@ public class ModelLoader {
                 AIVector3D normal = aiNormals.get(v);
                 vertices[v].normal = new Vector3f(normal.x(), normal.y(), normal.z());
             } else {
-                vertices[v].normal = new Vector3f(0.5f, 0.5f, 1f);
+                vertices[v].normal = new Vector3f(0.0f, 0.0f, 1f);
             }
 
             if (aiUVs != null) {
                 AIVector3D uv = aiUVs.get(v);
                 vertices[v].uv = new Vector2f(uv.x(), uv.y());
             } else {
-                vertices[v].uv = new Vector2f(0.5f, 0.5f);
+                vertices[v].uv = new Vector2f(0.0f, 0.0f);
             }
 
             if (aiTangents != null && aiBitangents != null && aiNormals != null) {
@@ -163,6 +162,8 @@ public class ModelLoader {
                 float sign = dot < 0.0f ? -1.0f : 1.0f;
 
                 vertices[v].tangent = new Vector4f(tangent.x(), tangent.y(), tangent.z(), sign);
+            } else {
+                vertices[v].tangent = new Vector4f(1.0f, 0.0f, 0.0f, 1.0f);
             }
         }
 

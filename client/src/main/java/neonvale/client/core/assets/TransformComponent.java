@@ -10,10 +10,15 @@ public class TransformComponent {
     public Vector3f position;
     public Quaternionf rotation;
     public Vector3f scale;
-    public Matrix4f worldtransform;
+    public Matrix4f worldTransform;
     int parentID = NONE_INDEX;
     int firstChildID = NONE_INDEX;
     int nextSiblingID = NONE_INDEX;
 
-    public TransformComponent(Vector3f position, Quaternionf rotation, Vector3f scale, Matrix4f worldtransform, int parentID, int firstChildID, int nextSiblingID) {}
+    public TransformComponent(Vector3f position, Quaternionf rotation, Vector3f scale, Matrix4f worldTransform, int parentID, int firstChildID, int nextSiblingID) {
+    }
+
+    public Matrix4f getWorldTransform() {
+        return this.worldTransform;
+    }
 }
