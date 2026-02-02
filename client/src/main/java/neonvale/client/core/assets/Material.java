@@ -1,12 +1,8 @@
 package neonvale.client.core.assets;
 
 import neonvale.client.core.Util;
-import neonvale.client.graphics.Shader;
 import org.joml.Vector4f;
 
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL11.glBindTexture;
-import static org.lwjgl.opengl.GL13.*;
 
 public class Material {
     public int albedoTex = Util.create1x1Texture(255,255, 255, 255, TextureColorSpace.SRGB);

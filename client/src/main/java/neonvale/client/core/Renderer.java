@@ -102,12 +102,13 @@ public class Renderer {
 
         shader.uniformMat4(camera.getViewMatrix(), "uView");
         shader.uniformMat4(camera.getProjectionMatrix(), "uProj");
+        shader.uniform3f(camera.getPosition(), "camPos");
 
         for (RenderObject obj : scene.renderObjects) {
             MeshGPU gpu = getOrCreateGPUMesh(obj.meshData);
             Material material = obj.material;
 
-            Matrix4f modelMatrix = obj.transformComponent.getWorldTransform();
+            Matrix4f modelMatrix = new Matrix4f(scene.sceneWorldTransform).mul(obj.transformComponent.getWorldTransform());
             shader.uniformMat4(modelMatrix, "uModel");
 
             Matrix3f normalMatrix = new Matrix3f();

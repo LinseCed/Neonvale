@@ -63,18 +63,17 @@ void main() {
 
     vec4 mr = texture(metallicRoughnessMap, UV);
     roughness *= mr.g;
+    roughness = clamp(roughness, 0.04, 1.0);
     metallic *= mr.b;
 
     N = normalize(Normal);
 
-
     vec3 tangentNormal = texture(normalMap, UV).xyz * 2.0 - 1.0;
     vec3 T = normalize(Tangent.xyz);
     T = normalize(T - N * dot(N, T));
-    vec3 B = Tangent.w * normalize(cross(N, T));
+    vec3 B = normalize(cross(N, T) * Tangent.w);
     mat3 TBN = mat3(T, B, N);
     N = normalize(TBN * tangentNormal);
-
     vec3 V = normalize(camPos - WorldPos);
 
     vec3 F0 = vec3(0.04);
@@ -85,7 +84,7 @@ void main() {
     vec3 L = normalize(uLightPosition - WorldPos);
     vec3 H = normalize(V + L);
     float distance = length(uLightPosition - WorldPos);
-    float attenuation = 1.0 / max((distance * distance), 0.000001);
+    float attenuation = 1.0 / max((distance * distance), 0.0000001);
     vec3 radiance = uLightRadiance * attenuation;
 
     float NDF = trowbridgeReitz(N, H, roughness);
@@ -110,7 +109,5 @@ void main() {
 
     color = pow(color, vec3(1.0/2.2));
 
-    vec3 n = normalize(Normal);
     FragColor = vec4(color, 1.0);
-
 }

@@ -24,7 +24,7 @@ public class ModelLoader {
         try {
             jarDir = new File(ModelLoader.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
             modelFile = new File(jarDir, path);
-            assimpScene = aiImportFile(modelFile.getAbsolutePath(), aiProcess_Triangulate | aiProcess_CalcTangentSpace);
+            assimpScene = aiImportFile(modelFile.getAbsolutePath(), aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -136,9 +136,9 @@ public class ModelLoader {
 
             if (aiNormals != null) {
                 AIVector3D normal = aiNormals.get(v);
-                vertices[v].normal = new Vector3f(normal.x(), normal.y(), normal.z());
+                vertices[v].normal = new Vector3f(normal.x(), normal.y(), normal.z()).normalize();
             } else {
-                vertices[v].normal = new Vector3f(0.5f, 0.5f, 1f);
+                vertices[v].normal = new Vector3f(0.0f, 0.0f, 1f);
             }
 
             if (aiUVs != null) {

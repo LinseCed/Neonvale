@@ -8,6 +8,8 @@ import neonvale.client.graphics.Shader;
 import neonvale.client.graphics.Window;
 import neonvale.client.input.KeyCallback;
 import neonvale.client.resources.ShaderManager;
+import org.joml.AxisAngle4f;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 import java.util.logging.Logger;
@@ -28,6 +30,7 @@ public class NeonvaleClient {
     KeyCallback keyCallback;
     Light light = new Light();
     Scene scene;
+    Scene lightScene = new Scene();
     Shader shader;
 
     public static void main(String[] args) {
@@ -42,10 +45,12 @@ public class NeonvaleClient {
         this.gameLoop = new GameLoop();
         keyCallback = KeyCallback.getInstance();
         scene = ModelLoader.load("../assets/ManWalls.glb");
+        lightScene = ModelLoader.load("../assets/Scene.gltf");
         shader = new Shader("../shaders/pbrshader.vert", "../shaders/pbrshader.frag");
         renderer = new Renderer(shader);
         light.position = new Vector3f(0, 0, 0);
         light.radiance = new Vector3f(100, 100, 100);
+        lightScene.transform(new Matrix4f().translate(light.position));
         shader.bind();
         shader.uniform3f(light.position, "uLightPosition");
         shader.uniform3f(light.radiance, "uLightRadiance");
@@ -73,11 +78,13 @@ public class NeonvaleClient {
 
     private void render(float delta) {
         this.window.clear();
-        this.renderer.draw(scene, camera);
         shader.bind();
         this.light.position = new Vector3f((float) Math.sin(glfwGetTime()) * 10);
+        lightScene.setTransform(new Matrix4f().translate(light.position).scale(0.01f));
         shader.uniform3f(light.position, "uLightPosition");
         shader.bind();
+        this.renderer.draw(scene, camera);
+        this.renderer.draw(lightScene, camera);
         this.window.update();
     }
 
