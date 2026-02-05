@@ -1,6 +1,7 @@
 package neonvale.client.core.assets;
 
 import neonvale.client.core.Util;
+import neonvale.client.core.components.TransformComponent;
 import org.joml.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.assimp.*;
@@ -16,7 +17,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 public class ModelLoader {
 
-    public static Scene load(String path) {
+    public static SceneAsset load(String path) {
         File jarDir;
         AIScene assimpScene;
         File modelFile;
@@ -32,19 +33,19 @@ public class ModelLoader {
             throw new RuntimeException("Failed to load Model: " + path);
         }
 
-        Scene scene = new Scene();
+        SceneAsset sceneAsset = new SceneAsset();
 
-        scene.materials = loadMaterials(assimpScene, modelFile);
+        sceneAsset.materials = loadMaterials(assimpScene, modelFile);
         AINode rootNode = assimpScene.mRootNode();
 
-        processNode(scene, assimpScene, rootNode, TransformComponent.NONE_INDEX, meshCache);
+        processNode(sceneAsset, assimpScene, rootNode, TransformComponent.NONE_INDEX, meshCache);
 
-        return scene;
+        return sceneAsset;
     }
 
-    private static void processNode(Scene scene, AIScene aiScene, AINode node, int parentID, Map<Integer, Integer> meshCache) {
-        int transformID = scene.transforms.size();
-        scene.transforms.add(new TransformComponent(
+    private static void processNode(SceneAsset sceneAsset, AIScene aiScene, AINode node, int parentID, Map<Integer, Integer> meshCache) {
+        int transformID = sceneAsset.transforms.size();
+        sceneAsset.transforms.add(new TransformComponent(
                 new Vector3f(0.0f),
                 new Quaternionf(),
                 new Vector3f(1.0f),
@@ -63,31 +64,31 @@ public class ModelLoader {
         rotation.normalize();
         transform.getScale(scale);
 
-        TransformComponent t = scene.transforms.get(transformID);
+        TransformComponent t = sceneAsset.transforms.get(transformID);
 
         t.position = position;
         t.rotation = rotation;
         t.scale = scale;
 
-        scene.transforms.get(transformID).parentID = parentID;
+        sceneAsset.transforms.get(transformID).parentID = parentID;
 
         if (parentID != TransformComponent.NONE_INDEX) {
-            TransformComponent parent = scene.transforms.get(parentID);
+            TransformComponent parent = sceneAsset.transforms.get(parentID);
             if (parent.firstChildID == TransformComponent.NONE_INDEX) {
                 parent.firstChildID = transformID;
             } else {
                 int sibling = parent.firstChildID;
-                while (scene.transforms.get(sibling).nextSiblingID != TransformComponent.NONE_INDEX) {
-                    sibling = scene.transforms.get(sibling).nextSiblingID;
+                while (sceneAsset.transforms.get(sibling).nextSiblingID != TransformComponent.NONE_INDEX) {
+                    sibling = sceneAsset.transforms.get(sibling).nextSiblingID;
                 }
-                scene.transforms.get(sibling).nextSiblingID = transformID;
+                sceneAsset.transforms.get(sibling).nextSiblingID = transformID;
             }
         }
 
         Matrix4f local = new Matrix4f().translate(t.position).rotate(t.rotation).scale(t.scale);
 
         if (t.parentID != TransformComponent.NONE_INDEX) {
-            t.worldTransform = new Matrix4f(scene.transforms.get(parentID).worldTransform).mul(local);
+            t.worldTransform = new Matrix4f(sceneAsset.transforms.get(parentID).worldTransform).mul(local);
         } else {
             t.worldTransform = local;
         }
@@ -100,22 +101,22 @@ public class ModelLoader {
                 Integer meshDataID = meshCache.get(meshIndex);
                 if (meshDataID == null) {
 
-                    meshDataID = scene.meshData.size();
+                    meshDataID = sceneAsset.meshData.size();
 
                     MeshData meshData = buildMeshData(mesh);
-                    scene.meshData.add(meshData);
+                    sceneAsset.meshData.add(meshData);
 
                     meshCache.put(meshIndex, meshDataID);
                 }
                 int materialIndex = mesh.mMaterialIndex();
-                scene.renderObjects.add(new RenderObject(scene.meshData.get(meshDataID), scene.transforms.get(transformID), scene.materials.get(materialIndex)));
+                sceneAsset.renderObjects.add(new RenderObject(sceneAsset.meshData.get(meshDataID), sceneAsset.transforms.get(transformID), sceneAsset.materials.get(materialIndex)));
             }
         }
 
         PointerBuffer children = node.mChildren();
         for (int i = 0; i < node.mNumChildren(); i++) {
             AINode child = AINode.create(children.get(i));
-            processNode(scene, aiScene, child, transformID, meshCache);
+            processNode(sceneAsset, aiScene, child, transformID, meshCache);
         }
     }
 
@@ -181,10 +182,10 @@ public class ModelLoader {
         return new MeshData(vertices, indices);
     }
 
-    private static List<Material> loadMaterials(AIScene scene, File modelFile) {
-        List<Material> materials = new ArrayList<>();
+    private static List<MaterialData> loadMaterials(AIScene scene, File modelFile) {
+        List<MaterialData> materials = new ArrayList<>();
         for (int i = 0; i < scene.mNumMaterials(); i++) {
-            Material material = new Material();
+            MaterialData material = new MaterialData();
             AIMaterial mat = AIMaterial.create(Objects.requireNonNull(scene.mMaterials()).get(i));
 
             // Material Name
@@ -207,6 +208,7 @@ public class ModelLoader {
                 String texPath = albedoTexPath.dataString();
                 ByteBuffer data = loadTextureData(scene, modelFile, texPath);
                 material.albedoTex = new Texture(data, TextureColorSpace.SRGB).getId();
+                material.albedoTexture = data;
                 memFree(data);
             }
             albedoTexPath.free();
@@ -218,6 +220,7 @@ public class ModelLoader {
                 String texPath = normalMapPath.dataString();
                 ByteBuffer data = loadTextureData(scene, modelFile, texPath);
                 material.normalMap = new Texture(data, TextureColorSpace.LINEAR).getId();
+                material.normalTexture = data;
                 memFree(data);
             }
             normalMapPath.free();
@@ -243,6 +246,7 @@ public class ModelLoader {
                 String texPath = metallicRoughnessTexPath.dataString();
                 ByteBuffer data = loadTextureData(scene, modelFile, texPath);
                 material.metallicRoughnessMap = new Texture(data, TextureColorSpace.LINEAR).getId();
+                material.metallicRoughnessTexture = data;
                 memFree(data);
 
             }

@@ -1,11 +1,15 @@
 package neonvale.client.core.assets;
 
+import neonvale.client.core.Entity;
+import neonvale.client.core.World;
+import neonvale.client.core.components.MeshRendererComponent;
+import neonvale.client.core.components.TransformComponent;
 import org.joml.Matrix4f;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class Scene {
+public class SceneAsset {
 
     public Matrix4f sceneWorldTransform = new Matrix4f().identity();
 
@@ -15,9 +19,10 @@ public class Scene {
 
     public List<RenderObject> renderObjects;
     public List<PointLightObject> pointLightObjects;
-    public List<Material> materials;
+    public List<MaterialData> materials;
+    public List<NodeData> nodeData;
 
-    public Scene() {
+    public SceneAsset() {
         this.meshData = new ArrayList<>();
         this.transforms = new ArrayList<>();
         this.pointLights = new ArrayList<>();
@@ -31,6 +36,13 @@ public class Scene {
 
     public void setTransform(Matrix4f t) {
         this.sceneWorldTransform = t;
+    }
+
+    public void instantiate(World world) {
+        for (MeshData md : meshData) {
+            Entity e = new Entity();
+            MeshRendererComponent mrc = new MeshRendererComponent();
+        }
     }
 
     @Override

@@ -6,12 +6,9 @@ import neonvale.client.graphics.MeshGPU;
 import neonvale.client.graphics.Shader;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
-import org.lwjgl.BufferUtils;
 
 import java.nio.FloatBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.lwjgl.opengl.GL11.*;
@@ -38,9 +35,9 @@ public class Renderer {
         this.meshes = new HashMap<>();
     }
 
-    public void addScene(Scene scene) {
-        for (int i = 0; i < scene.meshData.size(); i++) {
-            MeshData md = scene.meshData.get(i);
+    public void addScene(SceneAsset sceneAsset) {
+        for (int i = 0; i < sceneAsset.meshData.size(); i++) {
+            MeshData md = sceneAsset.meshData.get(i);
             meshes.put(md, createGPUMesh(md));
         }
     }
@@ -97,18 +94,26 @@ public class Renderer {
         return gpuMesh;
     }
 
-    public void draw(Scene scene, Camera camera) {
+    private void beginFrame() {
         shader.bind();
-
+        Camera camera = Camera.getInstance();
         shader.uniformMat4(camera.getViewMatrix(), "uView");
         shader.uniformMat4(camera.getProjectionMatrix(), "uProj");
         shader.uniform3f(camera.getPosition(), "camPos");
+    }
 
-        for (RenderObject obj : scene.renderObjects) {
+    private void endFrame() {
+        glBindVertexArray(0);
+        shader.unbind();
+    }
+
+    public void draw(SceneAsset sceneAsset) {
+        this.beginFrame();
+        for (RenderObject obj : sceneAsset.renderObjects) {
             MeshGPU gpu = getOrCreateGPUMesh(obj.meshData);
-            Material material = obj.material;
+            MaterialData material = obj.material;
 
-            Matrix4f modelMatrix = new Matrix4f(scene.sceneWorldTransform).mul(obj.transformComponent.getWorldTransform());
+            Matrix4f modelMatrix = new Matrix4f(sceneAsset.sceneWorldTransform).mul(obj.transformComponent.getWorldTransform());
             shader.uniformMat4(modelMatrix, "uModel");
 
             Matrix3f normalMatrix = new Matrix3f();
@@ -134,8 +139,6 @@ public class Renderer {
             glBindVertexArray(gpu.vao);
             glDrawElements(GL_TRIANGLES, gpu.indexCount, GL_UNSIGNED_INT, 0);
         }
-
-        glBindVertexArray(0);
-        shader.unbind();
+        this.endFrame();
     }
 }

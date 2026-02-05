@@ -3,11 +3,16 @@ package neonvale.client.core.assets;
 import neonvale.client.core.Util;
 import org.joml.Vector4f;
 
+import java.nio.ByteBuffer;
 
-public class Material {
+
+public class MaterialData {
     public int albedoTex = Util.create1x1Texture(255,255, 255, 255, TextureColorSpace.SRGB);
     public int normalMap = Util.create1x1Texture(128, 128, 255, 255, TextureColorSpace.LINEAR);
     public int metallicRoughnessMap = Util.create1x1Texture(255, 255, 255, 255, TextureColorSpace.LINEAR);
+    public ByteBuffer albedoTexture;
+    public ByteBuffer normalTexture;
+    public ByteBuffer metallicRoughnessTexture;
     public String name;
 
     public Vector4f baseColorFactor = new Vector4f(1, 1, 1, 1);

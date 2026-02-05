@@ -1,14 +1,13 @@
 package neonvale.client;
 
 import neonvale.client.core.*;
-import neonvale.client.core.assets.Scene;
+import neonvale.client.core.assets.SceneAsset;
 import neonvale.client.core.assets.ModelLoader;
 import neonvale.client.graphics.Camera;
 import neonvale.client.graphics.Shader;
 import neonvale.client.graphics.Window;
 import neonvale.client.input.KeyCallback;
 import neonvale.client.resources.ShaderManager;
-import org.joml.AxisAngle4f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -29,8 +28,8 @@ public class NeonvaleClient {
     private Renderer renderer;
     KeyCallback keyCallback;
     Light light = new Light();
-    Scene scene;
-    Scene lightScene = new Scene();
+    SceneAsset sceneAsset;
+    SceneAsset lightSceneAsset = new SceneAsset();
     Shader shader;
 
     public static void main(String[] args) {
@@ -44,13 +43,13 @@ public class NeonvaleClient {
         this.shaderManager = ShaderManager.getInstance();
         this.gameLoop = new GameLoop();
         keyCallback = KeyCallback.getInstance();
-        scene = ModelLoader.load("../assets/ManWalls.glb");
-        lightScene = ModelLoader.load("../assets/Scene.gltf");
+        sceneAsset = ModelLoader.load("../assets/MetalRoughSpheres.glb");
+        lightSceneAsset = ModelLoader.load("../assets/Scene.gltf");
         shader = new Shader("../shaders/pbrshader.vert", "../shaders/pbrshader.frag");
         renderer = new Renderer(shader);
-        light.position = new Vector3f(0, 0, 0);
-        light.radiance = new Vector3f(100, 100, 100);
-        lightScene.transform(new Matrix4f().translate(light.position));
+        light.position = new Vector3f(1, 1, 2);
+        light.radiance = new Vector3f(10, 10, 10);
+        lightSceneAsset.transform(new Matrix4f().translate(light.position));
         shader.bind();
         shader.uniform3f(light.position, "uLightPosition");
         shader.uniform3f(light.radiance, "uLightRadiance");
@@ -79,12 +78,9 @@ public class NeonvaleClient {
     private void render(float delta) {
         this.window.clear();
         shader.bind();
-        this.light.position = new Vector3f((float) Math.sin(glfwGetTime()) * 10);
-        lightScene.setTransform(new Matrix4f().translate(light.position).scale(0.01f));
-        shader.uniform3f(light.position, "uLightPosition");
-        shader.bind();
-        this.renderer.draw(scene, camera);
-        this.renderer.draw(lightScene, camera);
+        lightSceneAsset.setTransform(new Matrix4f().translate(light.position).scale(0.01f));
+        this.renderer.draw(sceneAsset);
+        this.renderer.draw(lightSceneAsset);
         this.window.update();
     }
 
