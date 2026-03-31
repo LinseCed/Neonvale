@@ -5,17 +5,24 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public class TransformComponent implements IComponent {
-    public static final int NONE_INDEX = -1;
 
     public Vector3f position;
     public Quaternionf rotation;
     public Vector3f scale;
     public Matrix4f worldTransform;
-    public int parentID = NONE_INDEX;
-    public int firstChildID = NONE_INDEX;
-    public int nextSiblingID = NONE_INDEX;
 
-    public TransformComponent(Vector3f position, Quaternionf rotation, Vector3f scale, Matrix4f worldTransform, int parentID, int firstChildID, int nextSiblingID) {
+    public TransformComponent(Vector3f position, Quaternionf rotation, Vector3f scale) {
+        this.position = position;
+        this.rotation = rotation;
+        this.scale = scale;
+        this.worldTransform = new Matrix4f().translate(position).rotate(rotation).scale(scale);
+    }
+
+    public TransformComponent(Vector3f position, Quaternionf rotation, Vector3f scale, Matrix4f worldTransform) {
+        this.position = position;
+        this.rotation = rotation;
+        this.scale = scale;
+        this.worldTransform = worldTransform;
     }
 
     public Matrix4f getWorldTransform() {
