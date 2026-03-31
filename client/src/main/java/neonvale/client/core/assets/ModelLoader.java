@@ -1,6 +1,9 @@
 package neonvale.client.core.assets;
 
+import neonvale.client.core.Entity;
 import neonvale.client.core.Util;
+import neonvale.client.core.World;
+import neonvale.client.core.components.MeshRendererComponent;
 import neonvale.client.core.components.TransformComponent;
 import org.joml.*;
 import org.lwjgl.PointerBuffer;
@@ -17,106 +20,63 @@ import static org.lwjgl.system.MemoryUtil.*;
 
 public class ModelLoader {
 
-    public static SceneAsset load(String path) {
+    public static void load(String path, World world) {
+        load(path, world, new Matrix4f());
+    }
+
+    public static void load(String path, World world, Matrix4f rootTransform) {
         File jarDir;
         AIScene assimpScene;
         File modelFile;
-        Map<Integer, Integer> meshCache = new HashMap<>();
         try {
             jarDir = new File(ModelLoader.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
             modelFile = new File(jarDir, path);
-            assimpScene = aiImportFile(modelFile.getAbsolutePath(), aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
+            assimpScene = aiImportFile(modelFile.getAbsolutePath(),
+                    aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
         if (assimpScene == null || assimpScene.mRootNode() == null) {
-            throw new RuntimeException("Failed to load Model: " + path);
+            throw new RuntimeException("Failed to load model: " + path);
         }
 
-        SceneAsset sceneAsset = new SceneAsset();
-
-        sceneAsset.materials = loadMaterials(assimpScene, modelFile);
-        AINode rootNode = assimpScene.mRootNode();
-
-        processNode(sceneAsset, assimpScene, rootNode, TransformComponent.NONE_INDEX, meshCache);
-
-        return sceneAsset;
+        List<MaterialData> materials = loadMaterials(assimpScene, modelFile);
+        Map<Integer, MeshData> meshCache = new HashMap<>();
+        processNode(world, assimpScene, assimpScene.mRootNode(), rootTransform, meshCache, materials);
     }
 
-    private static void processNode(SceneAsset sceneAsset, AIScene aiScene, AINode node, int parentID, Map<Integer, Integer> meshCache) {
-        int transformID = sceneAsset.transforms.size();
-        sceneAsset.transforms.add(new TransformComponent(
-                new Vector3f(0.0f),
-                new Quaternionf(),
-                new Vector3f(1.0f),
-                new Matrix4f().identity(),
-                TransformComponent.NONE_INDEX,
-                TransformComponent.NONE_INDEX,
-                TransformComponent.NONE_INDEX
-        ));
+    private static void processNode(World world, AIScene aiScene, AINode node, Matrix4f parentWorldTransform,
+                                    Map<Integer, MeshData> meshCache, List<MaterialData> materials) {
+        Matrix4f localTransform = Util.toMatrix4f(node.mTransformation());
+        Matrix4f worldTransform = new Matrix4f(parentWorldTransform).mul(localTransform);
 
-        Matrix4f transform = Util.toMatrix4f(node.mTransformation());
-        Vector3f position = new Vector3f();
-        Quaternionf rotation = new Quaternionf();
-        Vector3f scale = new Vector3f();
-        transform.getTranslation(position);
-        transform.getUnnormalizedRotation(rotation);
-        rotation.normalize();
-        transform.getScale(scale);
+        Vector3f position = worldTransform.getTranslation(new Vector3f());
+        Quaternionf rotation = worldTransform.getUnnormalizedRotation(new Quaternionf()).normalize();
+        Vector3f scale = worldTransform.getScale(new Vector3f());
 
-        TransformComponent t = sceneAsset.transforms.get(transformID);
-
-        t.position = position;
-        t.rotation = rotation;
-        t.scale = scale;
-
-        sceneAsset.transforms.get(transformID).parentID = parentID;
-
-        if (parentID != TransformComponent.NONE_INDEX) {
-            TransformComponent parent = sceneAsset.transforms.get(parentID);
-            if (parent.firstChildID == TransformComponent.NONE_INDEX) {
-                parent.firstChildID = transformID;
-            } else {
-                int sibling = parent.firstChildID;
-                while (sceneAsset.transforms.get(sibling).nextSiblingID != TransformComponent.NONE_INDEX) {
-                    sibling = sceneAsset.transforms.get(sibling).nextSiblingID;
-                }
-                sceneAsset.transforms.get(sibling).nextSiblingID = transformID;
-            }
-        }
-
-        Matrix4f local = new Matrix4f().translate(t.position).rotate(t.rotation).scale(t.scale);
-
-        if (t.parentID != TransformComponent.NONE_INDEX) {
-            t.worldTransform = new Matrix4f(sceneAsset.transforms.get(parentID).worldTransform).mul(local);
-        } else {
-            t.worldTransform = local;
-        }
+        Entity entity = new Entity();
+        entity.addComponent(new TransformComponent(position, rotation, scale, worldTransform));
 
         IntBuffer meshIndices = node.mMeshes();
-        if (meshIndices != null) {
+        if (meshIndices != null && node.mNumMeshes() > 0) {
+            MeshRendererComponent meshRenderer = new MeshRendererComponent();
             for (int i = 0; i < node.mNumMeshes(); i++) {
                 int meshIndex = meshIndices.get(i);
-                AIMesh mesh = AIMesh.create(aiScene.mMeshes().get(meshIndex));
-                Integer meshDataID = meshCache.get(meshIndex);
-                if (meshDataID == null) {
-
-                    meshDataID = sceneAsset.meshData.size();
-
-                    MeshData meshData = buildMeshData(mesh);
-                    sceneAsset.meshData.add(meshData);
-
-                    meshCache.put(meshIndex, meshDataID);
-                }
-                int materialIndex = mesh.mMaterialIndex();
-                sceneAsset.renderObjects.add(new RenderObject(sceneAsset.meshData.get(meshDataID), sceneAsset.transforms.get(transformID), sceneAsset.materials.get(materialIndex)));
+                AIMesh aiMesh = AIMesh.create(aiScene.mMeshes().get(meshIndex));
+                MeshData meshData = meshCache.computeIfAbsent(meshIndex, idx -> buildMeshData(aiMesh));
+                meshRenderer.addMesh(meshData, materials.get(aiMesh.mMaterialIndex()));
             }
+            entity.addComponent(meshRenderer);
         }
 
+        world.addEntity(entity);
+
         PointerBuffer children = node.mChildren();
-        for (int i = 0; i < node.mNumChildren(); i++) {
-            AINode child = AINode.create(children.get(i));
-            processNode(sceneAsset, aiScene, child, transformID, meshCache);
+        if (children != null) {
+            for (int i = 0; i < node.mNumChildren(); i++) {
+                AINode child = AINode.create(children.get(i));
+                processNode(world, aiScene, child, worldTransform, meshCache, materials);
+            }
         }
     }
 
@@ -159,7 +119,6 @@ public class ModelLoader {
                 float cz = normal.x() * tangent.y() - normal.y() * tangent.x();
 
                 float dot = cx * bitangent.x() + cy * bitangent.y() + cz * bitangent.z();
-
                 float sign = dot < 0.0f ? -1.0f : 1.0f;
 
                 vertices[v].tangent = new Vector4f(tangent.x(), tangent.y(), tangent.z(), sign);
@@ -170,7 +129,6 @@ public class ModelLoader {
 
         int faceCount = mesh.mNumFaces();
         int[] indices = new int[faceCount * 3];
-
         AIFace.Buffer faces = mesh.mFaces();
         for (int f = 0; f < faceCount; f++) {
             AIFace face = faces.get(f);
@@ -188,67 +146,48 @@ public class ModelLoader {
             MaterialData material = new MaterialData();
             AIMaterial mat = AIMaterial.create(Objects.requireNonNull(scene.mMaterials()).get(i));
 
-            // Material Name
             AIString name = AIString.calloc();
             Assimp.aiGetMaterialString(mat, Assimp.AI_MATKEY_NAME, aiTextureType_NONE, 0, name);
             material.name = name.dataString();
             name.free();
 
-            // Base Color Factor
             AIColor4D color = AIColor4D.create();
-            int result = Assimp.aiGetMaterialColor(mat, AI_MATKEY_BASE_COLOR, aiTextureType_NONE, 0, color);
-            if (result == aiReturn_SUCCESS) {
+            if (Assimp.aiGetMaterialColor(mat, AI_MATKEY_BASE_COLOR, aiTextureType_NONE, 0, color) == aiReturn_SUCCESS) {
                 material.baseColorFactor = new Vector4f(color.r(), color.g(), color.b(), color.a());
             }
 
-            // Albedo Texture
             AIString albedoTexPath = AIString.calloc();
-            result = Assimp.aiGetMaterialTexture(mat, aiTextureType_BASE_COLOR, 0, albedoTexPath, (IntBuffer) null, null, null, null, null, null);
-            if (result == aiReturn_SUCCESS) {
-                String texPath = albedoTexPath.dataString();
-                ByteBuffer data = loadTextureData(scene, modelFile, texPath);
+            if (Assimp.aiGetMaterialTexture(mat, aiTextureType_BASE_COLOR, 0, albedoTexPath,
+                    (IntBuffer) null, null, null, null, null, null) == aiReturn_SUCCESS) {
+                ByteBuffer data = loadTextureData(scene, modelFile, albedoTexPath.dataString());
                 material.albedoTex = new Texture(data, TextureColorSpace.SRGB).getId();
-                material.albedoTexture = data;
                 memFree(data);
             }
             albedoTexPath.free();
 
-            // Normal Map
             AIString normalMapPath = AIString.calloc();
-            result = Assimp.aiGetMaterialTexture(mat, aiTextureType_NORMALS, 0, normalMapPath, (IntBuffer) null, null, null, null, null, null);
-            if (result == aiReturn_SUCCESS) {
-                String texPath = normalMapPath.dataString();
-                ByteBuffer data = loadTextureData(scene, modelFile, texPath);
+            if (Assimp.aiGetMaterialTexture(mat, aiTextureType_NORMALS, 0, normalMapPath,
+                    (IntBuffer) null, null, null, null, null, null) == aiReturn_SUCCESS) {
+                ByteBuffer data = loadTextureData(scene, modelFile, normalMapPath.dataString());
                 material.normalMap = new Texture(data, TextureColorSpace.LINEAR).getId();
-                material.normalTexture = data;
                 memFree(data);
             }
             normalMapPath.free();
 
             float[] tmp = new float[1];
-
-            // Metallic Factor
-            result = Assimp.aiGetMaterialFloatArray(mat, AI_MATKEY_METALLIC_FACTOR, aiTextureType_NONE, 0, tmp,null);
-            if (result == aiReturn_SUCCESS) {
+            if (Assimp.aiGetMaterialFloatArray(mat, AI_MATKEY_METALLIC_FACTOR, aiTextureType_NONE, 0, tmp, null) == aiReturn_SUCCESS) {
                 material.metallicFactor = tmp[0];
             }
-
-            // Roughness Factor
-            result = Assimp.aiGetMaterialFloatArray(mat, AI_MATKEY_ROUGHNESS_FACTOR, aiTextureType_NONE, 0, tmp,null);
-            if (result == aiReturn_SUCCESS) {
+            if (Assimp.aiGetMaterialFloatArray(mat, AI_MATKEY_ROUGHNESS_FACTOR, aiTextureType_NONE, 0, tmp, null) == aiReturn_SUCCESS) {
                 material.roughness = tmp[0];
             }
 
-            // Metallic Roughness Texture
             AIString metallicRoughnessTexPath = AIString.calloc();
-            result = Assimp.aiGetMaterialTexture(mat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, 0, metallicRoughnessTexPath, (IntBuffer) null, null, null, null, null, null);
-            if (result == aiReturn_SUCCESS) {
-                String texPath = metallicRoughnessTexPath.dataString();
-                ByteBuffer data = loadTextureData(scene, modelFile, texPath);
+            if (Assimp.aiGetMaterialTexture(mat, AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, 0,
+                    metallicRoughnessTexPath, (IntBuffer) null, null, null, null, null, null) == aiReturn_SUCCESS) {
+                ByteBuffer data = loadTextureData(scene, modelFile, metallicRoughnessTexPath.dataString());
                 material.metallicRoughnessMap = new Texture(data, TextureColorSpace.LINEAR).getId();
-                material.metallicRoughnessTexture = data;
                 memFree(data);
-
             }
             metallicRoughnessTexPath.free();
 
@@ -261,20 +200,15 @@ public class ModelLoader {
         if (texPath.startsWith("*")) {
             int index = Integer.parseInt(texPath.substring(1));
             AITexture tex = AITexture.create(scene.mTextures().get(index));
-
             if (tex.mHeight() != 0) {
-                throw new UnsupportedOperationException("Uncompressed embedded textures not supported yet");
+                throw new UnsupportedOperationException("Uncompressed embedded textures not supported");
             }
-
             ByteBuffer src = tex.pcDataCompressed();
-            ByteBuffer slice = src.slice(0, tex.mWidth());
             ByteBuffer copy = memAlloc(tex.mWidth());
-            copy.put(slice).flip();
+            copy.put(src.slice(0, tex.mWidth())).flip();
             return copy;
         } else {
-            File texFile = new File(modelFile.getParentFile(), texPath);
-            return Util.readFileToBuffer(texFile);
+            return Util.readFileToBuffer(new File(modelFile.getParentFile(), texPath));
         }
     }
-
 }

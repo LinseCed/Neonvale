@@ -1,9 +1,18 @@
 package neonvale.client.core.components;
 
+import neonvale.client.core.assets.MaterialData;
+import neonvale.client.core.assets.MeshData;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class MeshRendererComponent implements IComponent {
-    List<UUID> meshData;
-    List<UUID> materialData;
+
+    public record MeshEntry(MeshData meshData, MaterialData material) {}
+
+    public final List<MeshEntry> meshes = new ArrayList<>();
+
+    public void addMesh(MeshData meshData, MaterialData material) {
+        meshes.add(new MeshEntry(meshData, material));
+    }
 }
