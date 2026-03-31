@@ -10,7 +10,6 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.assimp.*;
 
 import java.io.File;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.*;
@@ -25,17 +24,12 @@ public class ModelLoader {
     }
 
     public static void load(String path, World world, Matrix4f rootTransform) {
-        File jarDir;
-        AIScene assimpScene;
-        File modelFile;
-        try {
-            jarDir = new File(ModelLoader.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile();
-            modelFile = new File(jarDir, path);
-            assimpScene = aiImportFile(modelFile.getAbsolutePath(),
-                    aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
+        File modelFile = new File(path);
+        if (!modelFile.isAbsolute()) {
+            modelFile = new File(System.getProperty("user.dir"), path);
         }
+        AIScene assimpScene = aiImportFile(modelFile.getAbsolutePath(),
+                aiProcess_Triangulate | aiProcess_CalcTangentSpace | aiProcess_GenSmoothNormals | aiProcess_JoinIdenticalVertices);
         if (assimpScene == null || assimpScene.mRootNode() == null) {
             throw new RuntimeException("Failed to load model: " + path);
         }
