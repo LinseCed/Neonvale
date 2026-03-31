@@ -11,11 +11,6 @@ public class ShaderManager {
     private static ShaderManager instance = new ShaderManager();
     private final Map<String, Shader> shaders;
 
-    String basicVertexShader = "basic.vert";
-    String basicFragmentShader = "basic.frag";
-    String basicTextureVertexShader = "basicTexture.vert";
-    String basicTextureFragmentShader = "basicTexture.frag";
-
     private ShaderManager() {
         this.shaders = new HashMap<>();
         loadShaders();
@@ -29,10 +24,17 @@ public class ShaderManager {
     }
 
     private void loadShaders() {
-        Shader basicShader = new Shader(basicVertexShader, basicFragmentShader);
-        shaders.put("Basic", basicShader);
-        Shader basicTextureShader = new Shader(basicTextureVertexShader, basicTextureFragmentShader);
-        shaders.put("BasicTexture", basicTextureShader);
+        shaders.put("Basic", new Shader("basic.vert", "basic.frag"));
+        shaders.put("BasicTexture", new Shader("basicTexture.vert", "basicTexture.frag"));
+        shaders.put("PBR", new Shader("pbrshader.vert", "pbrshader.frag"));
+    }
+
+    public Shader get(String shaderName) {
+        Shader shader = shaders.get(shaderName);
+        if (shader == null) {
+            throw new RuntimeException("Shader " + shaderName + " not found.");
+        }
+        return shader;
     }
 
     public void use(String shaderName) {
