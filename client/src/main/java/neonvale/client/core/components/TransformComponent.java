@@ -28,4 +28,9 @@ public class TransformComponent implements IComponent {
     public Matrix4f getWorldTransform() {
         return this.worldTransform;
     }
+
+    public void setPosition(Vector3f position) {
+        this.position = position;
+        this.worldTransform = new Matrix4f().translate(position).rotate(rotation).scale(scale);
+    }
 }

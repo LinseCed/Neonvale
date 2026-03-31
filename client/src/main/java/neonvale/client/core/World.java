@@ -14,6 +14,10 @@ public class World {
         entities.add(entity);
     }
 
+    public void removeEntity(Entity entity) {
+        entities.remove(entity);
+    }
+
     public List<Entity> query(Class<? extends IComponent> c1) {
         return entities.stream()
                 .filter(e -> e.hasComponent(c1))
