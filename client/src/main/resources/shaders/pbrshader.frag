@@ -17,8 +17,10 @@ uniform float uRoughness;
 
 uniform vec3 camPos;
 
-uniform vec3 uLightPosition;
-uniform vec3 uLightRadiance;
+const int MAX_LIGHTS = 8;
+uniform int uLightCount;
+uniform vec3 uLightPositions[MAX_LIGHTS];
+uniform vec3 uLightRadiances[MAX_LIGHTS];
 
 float trowbridgeReitz(vec3 n, vec3 m, float roughness) {
     float a = roughness * roughness;
@@ -81,27 +83,27 @@ void main() {
 
     vec3 LO = vec3(0.0);
 
-    vec3 L = normalize(uLightPosition - WorldPos);
-    vec3 H = normalize(V + L);
-    float distance = length(uLightPosition - WorldPos);
-    float attenuation = 1.0 / max((distance * distance), 0.0000001);
-    vec3 radiance = uLightRadiance * attenuation;
+    for (int i = 0; i < uLightCount; i++) {
+        vec3 L = normalize(uLightPositions[i] - WorldPos);
+        vec3 H = normalize(V + L);
+        float distance = length(uLightPositions[i] - WorldPos);
+        float attenuation = 1.0 / max((distance * distance), 0.0000001);
+        vec3 radiance = uLightRadiances[i] * attenuation;
 
-    float NDF = trowbridgeReitz(N, H, roughness);
-    float G = Geometry(N, L, V, roughness);
-    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+        float NDF = trowbridgeReitz(N, H, roughness);
+        float G = Geometry(N, L, V, roughness);
+        vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    vec3 numerator = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.000001;
-    vec3 specular = numerator / denominator;
+        vec3 numerator = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.000001;
+        vec3 specular = numerator / denominator;
 
-    vec3 kD = vec3(1.0) - F;
+        vec3 kD = vec3(1.0) - F;
+        kD *= 1.0 - metallic;
 
-    kD *= 1.0 - metallic;
-
-    float NdotL = max(dot(N, L), 0.0);
-
-    LO += (kD * vec3(albedo) / PI + specular) * radiance * NdotL;
+        float NdotL = max(dot(N, L), 0.0);
+        LO += (kD * vec3(albedo) / PI + specular) * radiance * NdotL;
+    }
 
     vec3 ambient = vec3(0.03) * vec3(albedo);
 

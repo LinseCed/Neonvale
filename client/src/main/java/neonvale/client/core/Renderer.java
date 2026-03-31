@@ -38,13 +38,15 @@ public class Renderer {
         beginFrame();
 
         List<Entity> lights = world.query(TransformComponent.class, PointLightComponent.class);
-        if (!lights.isEmpty()) {
-            Entity light = lights.get(0);
+        int lightCount = Math.min(lights.size(), 8);
+        for (int i = 0; i < lightCount; i++) {
+            Entity light = lights.get(i);
             Vector3f pos = light.getComponent(TransformComponent.class).getWorldTransform().getTranslation(new Vector3f());
             Vector3f radiance = light.getComponent(PointLightComponent.class).radiance;
-            shader.uniform3f(pos, "uLightPosition");
-            shader.uniform3f(radiance, "uLightRadiance");
+            shader.uniform3f(pos, "uLightPositions[" + i + "]");
+            shader.uniform3f(radiance, "uLightRadiances[" + i + "]");
         }
+        shader.uniform1i(lightCount, "uLightCount");
 
         for (Entity entity : world.query(TransformComponent.class, MeshRendererComponent.class)) {
             TransformComponent transform = entity.getComponent(TransformComponent.class);
