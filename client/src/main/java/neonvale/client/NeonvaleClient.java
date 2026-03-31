@@ -5,7 +5,6 @@ import neonvale.client.core.components.PointLightComponent;
 import neonvale.client.core.components.TransformComponent;
 import neonvale.client.core.assets.ModelLoader;
 import neonvale.client.graphics.Camera;
-import neonvale.client.graphics.Shader;
 import neonvale.client.graphics.Window;
 import neonvale.client.input.KeyCallback;
 import neonvale.client.resources.ShaderManager;
@@ -23,7 +22,6 @@ public class NeonvaleClient {
     private Renderer renderer;
     private KeyCallback keyCallback;
     private World world;
-    private Shader shader;
 
     public static void main(String[] args) {
         new NeonvaleClient().run();
@@ -45,8 +43,7 @@ public class NeonvaleClient {
         lightEntity.addComponent(new PointLightComponent(new Vector3f(10, 10, 10)));
         world.addEntity(lightEntity);
 
-        shader = new Shader("../shaders/pbrshader.vert", "../shaders/pbrshader.frag");
-        renderer = new Renderer(shader);
+        renderer = new Renderer(ShaderManager.getInstance().get("PBR"));
 
         if (Config.enableWireframe) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
