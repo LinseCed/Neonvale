@@ -1,16 +1,23 @@
 package neonvale.client;
 
 import neonvale.client.core.*;
-import neonvale.client.core.components.PointLightComponent;
-import neonvale.client.core.components.TransformComponent;
 import neonvale.client.core.assets.ModelLoader;
+import neonvale.client.core.components.PointLightComponent;
+import neonvale.client.core.components.RemotePlayerComponent;
+import neonvale.client.core.components.TransformComponent;
 import neonvale.client.graphics.Camera;
 import neonvale.client.graphics.Window;
 import neonvale.client.input.KeyCallback;
+import neonvale.client.net.NetworkClient;
 import neonvale.client.resources.ShaderManager;
+import neonvale.shared.net.StatePacket;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -22,6 +29,8 @@ public class NeonvaleClient {
     private Renderer renderer;
     private KeyCallback keyCallback;
     private World world;
+    private NetworkClient networkClient;
+    private final Map<String, Entity> remotePlayers = new HashMap<>();
 
     public static void main(String[] args) {
         new NeonvaleClient().run();
@@ -45,6 +54,9 @@ public class NeonvaleClient {
 
         renderer = new Renderer(ShaderManager.getInstance().get("PBR"));
 
+        networkClient = new NetworkClient();
+        networkClient.connect();
+
         if (Config.enableWireframe) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         }
@@ -63,6 +75,44 @@ public class NeonvaleClient {
             gameLoop.stop();
         }
         keyCallback.pollInputs(window.getWindow(), delta);
+
+        Vector3f pos = camera.getPosition();
+        networkClient.sendMove(pos.x, pos.y, pos.z);
+
+        StatePacket state = networkClient.pollState();
+        if (state != null) {
+            applyWorldState(state);
+        }
+    }
+
+    private void applyWorldState(StatePacket state) {
+        String localId = networkClient.getLocalPlayerId();
+        for (StatePacket.PlayerEntry entry : state.players) {
+            if (entry.id.equals(localId)) continue;
+
+            Entity entity = remotePlayers.get(entry.id);
+            if (entity == null) {
+                entity = new Entity();
+                entity.addComponent(new TransformComponent(
+                    new Vector3f(entry.x, entry.y, entry.z), new Quaternionf(), new Vector3f(1)));
+                entity.addComponent(new RemotePlayerComponent(entry.id));
+                world.addEntity(entity);
+                remotePlayers.put(entry.id, entity);
+            } else {
+                entity.getComponent(TransformComponent.class).setPosition(
+                    new Vector3f(entry.x, entry.y, entry.z));
+            }
+        }
+
+        // Remove players that are no longer in the state
+        List<String> currentIds = state.players.stream().map(e -> e.id).toList();
+        remotePlayers.entrySet().removeIf(entry -> {
+            if (!currentIds.contains(entry.getKey())) {
+                world.removeEntity(entry.getValue());
+                return true;
+            }
+            return false;
+        });
     }
 
     private void render(float delta) {
@@ -72,6 +122,7 @@ public class NeonvaleClient {
     }
 
     private void cleanup() {
+        networkClient.disconnect();
         window.cleanup();
     }
 }
