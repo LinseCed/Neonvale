@@ -41,3 +41,9 @@ build/
 ### Claude Code ###
 .claude/
 CLAUDE.md
+
+### Neonvale ###
+.env
+dev.sh
+dev.bat
+dev.ps1
