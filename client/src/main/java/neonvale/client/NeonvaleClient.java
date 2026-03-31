@@ -35,8 +35,8 @@ public class NeonvaleClient {
         this.keyCallback = KeyCallback.getInstance();
 
         this.world = new World();
-        ModelLoader.load("../assets/MetalRoughSpheres.glb", world);
-        ModelLoader.load("../assets/Scene.gltf", world, new Matrix4f().translate(1, 1, 2).scale(0.01f));
+        ModelLoader.load("/assets/MetalRoughSpheres.glb", world);
+        ModelLoader.load("/assets/Scene.gltf", world, new Matrix4f().translate(1, 1, 2).scale(0.01f));
 
         Entity lightEntity = new Entity();
         lightEntity.addComponent(new TransformComponent(new Vector3f(1, 1, 2), new Quaternionf(), new Vector3f(1)));
