@@ -7,9 +7,11 @@ import neonvale.shared.net.StatePacket;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class NetworkClient {
@@ -19,7 +21,18 @@ public class NetworkClient {
     private String localPlayerId;
     private final AtomicReference<StatePacket> latestState = new AtomicReference<>();
 
-    public void connect(String host, int port) {
+    public void connect() {
+        Properties props = new Properties();
+        try (InputStream is = NetworkClient.class.getResourceAsStream("/network.properties")) {
+            if (is != null) props.load(is);
+        } catch (IOException ignored) {}
+
+        String host = props.getProperty("serverHost", "localhost");
+        int port = Integer.parseInt(props.getProperty("serverPort", "7777"));
+        connect(host, port);
+    }
+
+    private void connect(String host, int port) {
         try {
             socket = new Socket(host, port);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -42,7 +55,7 @@ public class NetworkClient {
                 }
             });
         } catch (IOException e) {
-            System.out.println("Could not connect to server: " + e.getMessage());
+            System.out.println("Could not connect to server at " + host + ":" + port + " — " + e.getMessage());
         }
     }
 

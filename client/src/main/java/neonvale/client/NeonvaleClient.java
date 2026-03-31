@@ -55,7 +55,7 @@ public class NeonvaleClient {
         renderer = new Renderer(ShaderManager.getInstance().get("PBR"));
 
         networkClient = new NetworkClient();
-        networkClient.connect("localhost", 7777);
+        networkClient.connect();
 
         if (Config.enableWireframe) {
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
